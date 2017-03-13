@@ -1,0 +1,6 @@
+[submodule "libpng"]
+	path = libpng
+	url = https://github.com/glennrp/libpng.git
+[submodule "plog"]
+	path = plog
+	url = https://github.com/SergiusTheBest/plog.git
