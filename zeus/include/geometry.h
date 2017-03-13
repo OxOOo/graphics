@@ -1,6 +1,10 @@
 #ifndef ZEUS_GEOMETRY_H
 #define ZEUS_GEOMETRY_H
 
+#include <cmath>
+
+const double PI = std::acos(-1);
+
 template<typename T>
 struct Point
 {
@@ -60,6 +64,12 @@ template<typename T>
 bool operator>=(const Point<T>&A, const Point<T>&B)
 {
     return A > B || A == B;
+}
+
+template<typename T>
+T cross(const Point<T>&A, const Point<T>&B)
+{
+    return A.x*B.y-A.y*B.x;
 }
 
 typedef Point<double> Pointf;
