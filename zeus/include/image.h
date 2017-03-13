@@ -4,9 +4,19 @@
 #include <string>
 #include <memory>
 
+#define PIXEL_RED Pixel(255, 0, 0)
+#define PIXEL_GREEN Pixel(0, 255, 0)
+#define PIXEL_BLUE Pixel(0, 0, 255)
+#define PIXEL_YELLOW Pixel(255, 255, 0)
+#define PIXEL_WHITE Pixel(255, 255, 255)
+#define PIXEL_BLACK Pixel(0, 0, 0)
+#define PIXEL_GRAY Pixel(125, 125, 125)
+
 struct Pixel
 {
     unsigned char r, b, g, a;
+    Pixel();
+    Pixel(unsigned char r, unsigned char g, unsigned char b, unsigned char a = 255);
 };
 
 /// 处理图片相关的功能，不包括绘图
@@ -32,6 +42,7 @@ public:
     ColorType type();
     /// x: [0:h-1]; y: [0:w-1]
     Pixel* getPixel(int x, int y);
+    void setPixel(int x, int y, Pixel pixel);
     void setPixel(int x, int y, unsigned char r, unsigned char g, unsigned char b);
     void setPixel(int x, int y, unsigned char r, unsigned char g, unsigned char b, unsigned char a);
     void fill(unsigned char r, unsigned char g, unsigned char b);

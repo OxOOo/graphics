@@ -5,6 +5,22 @@
 
 using namespace std;
 
+Pixel::Pixel()
+{
+    this->r = 0;
+    this->g = 0;
+    this->b = 0;
+    this->a = 255;
+}
+
+Pixel::Pixel(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
+{
+    this->r = r;
+    this->g = g;
+    this->b = b;
+    this->a = a;
+}
+
 Image::ptr Image::imread(const std::string& filename)
 {
     return make_shared<Image>(filename);
@@ -25,13 +41,13 @@ Image::Image(const std::string& filename): pixels(NULL)
     this->load(filename);
 }
 
-Image::Image(int height, int width)
+Image::Image(int height, int width): pixels(NULL)
 {
     this->w = width;
     this->h = height;
     this->t = RGBA;
     this->mallocMemory();
-    this->fill(0, 0, 0, 255);
+    this->fill(255, 255, 255, 255);
 }
 
 Image::~Image()
@@ -67,9 +83,16 @@ Image::ColorType Image::type()
 
 Pixel* Image::getPixel(int x, int y)
 {
+    if(0 <= x && x < h);else LOG_DEBUG << "x " << x;
+    if(0 <= y && y < w);else LOG_DEBUG << "y " << y;
     ASSERT(0 <= x && x < h);
     ASSERT(0 <= y && y < w);
     return pixels+x*w+y;
+}
+
+void Image::setPixel(int x, int y, Pixel pixel)
+{
+    *getPixel(x, y) = pixel;
 }
 
 void Image::setPixel(int x, int y, unsigned char r, unsigned char g, unsigned char b)
