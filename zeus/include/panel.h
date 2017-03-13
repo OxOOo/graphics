@@ -10,8 +10,12 @@
 // 二维世界，坐标和图片无关
 class Panel
 {
+    // 抗锯齿的范围
+    const static int AA_RANGE = 4;
+    const static int AA_CENTER_W = 2;
 public:
-    Panel(int height, int width);
+    /// 高度，宽度，是否反走样
+    Panel(int height, int width, bool AA = false);
     ~Panel();
 
     /// 画线
@@ -25,9 +29,13 @@ public:
 
 private:
     Image::ptr image;
+    bool AA;
 
     std::vector<Pointi> linearPoints(Pointi A, Pointi B, bool y = false);
     std::vector<Pointi> circlePoints(Pointi C, int r);
+
+    // 抗锯齿
+    void processAA(const std::vector<Pointi>& target_points);
 };
 
 #endif // ZEUS_PANEL_H

@@ -7,7 +7,7 @@
 
 using namespace std;
 
-Panel::Panel(int height, int width)
+Panel::Panel(int height, int width, bool AA): AA(AA)
 {
     this->image = Image::create(height, width);
 }
@@ -21,23 +21,25 @@ void Panel::drawLine(int x1, int y1, int x2, int y2, Pixel pixel)
 {
     Pointi A(x1, y1);
     Pointi B(x2, y2);
-    std::vector<Pointi> pixels = linearPoints(A, B);
+    std::vector<Pointi> target_points = linearPoints(A, B);
 
-    for(int i = 0; i < (int)pixels.size(); i ++)
+    for(int i = 0; i < (int)target_points.size(); i ++)
     {
-        this->image->setPixel(pixels[i].x, pixels[i].y, pixel);
+        this->image->setPixel(target_points[i].x, target_points[i].y, pixel);
     }
+    processAA(target_points);
 }
 
 void Panel::drawCircle(int x, int y, int r, Pixel pixel)
 {
     Pointi C(x, y);
-    std::vector<Pointi> pixels = circlePoints(C, r);
+    std::vector<Pointi> target_points = circlePoints(C, r);
 
-    for(int  i = 0; i < (int)pixels.size(); i ++)
+    for(int  i = 0; i < (int)target_points.size(); i ++)
     {
-        this->image->setPixel(pixels[i].x, pixels[i].y, pixel);
+        this->image->setPixel(target_points[i].x, target_points[i].y, pixel);
     }
+    processAA(target_points);
 }
 
 void Panel::drawPolygon(std::vector<Pointi> points, Pixel pixel)
@@ -52,6 +54,8 @@ void Panel::drawPolygon(std::vector<Pointi> points, Pixel pixel)
         y_min = min(y_min, points[i].y);
         y_max = max(y_max, points[i].y);
     }
+
+    std::vector<Pointi> target_points;
     for(int x = x_min; x <= x_max; x ++)
         for(int y = y_min; y <= y_max; y ++)
         {
@@ -69,8 +73,12 @@ void Panel::drawPolygon(std::vector<Pointi> points, Pixel pixel)
                     if (P.y != B.y && cross(B-A, P-A) >= 0) flag ^= 1;
                 }
             }
-            if(flag) this->image->setPixel(x, y, pixel);
+            if(flag) {
+                this->image->setPixel(x, y, pixel);
+                target_points.push_back(Pointi(x, y));
+            }
         }
+    processAA(target_points);
 }
 
 void Panel::save(const std::string& filename)
@@ -80,14 +88,6 @@ void Panel::save(const std::string& filename)
 
 std::vector<Pointi> Panel::linearPoints(Pointi A, Pointi B, bool y)
 {
-    // FIXME 抗锯齿
-    // if (abs(A.x-B.x) < abs(A.y-B.y))
-    // {
-    //     std::vector<Pointi> rst = linearPoints(Pointi(A.y, A.x), Pointi(B.y, B.x));
-    //     for(int i = 0; i < (int)rst.size(); i ++)
-    //         swap(rst[i].x, rst[i].y);
-    //     return rst;
-    // }
     if(A > B) swap(A, B);
 
     std::vector<Pointi> rst;
@@ -119,4 +119,42 @@ std::vector<Pointi> Panel::circlePoints(Pointi C, int r)
     }
 
     return rst;
+}
+
+void Panel::processAA(const std::vector<Pointi>& target_points)
+{
+    if (!AA) return;
+    std::vector<Pointi> nearly_points = nearlyPoints(target_points);
+    std::vector<Pixel> pixels;
+    pixels.resize(nearly_points.size());
+
+    for(int i = 0; i < (int)nearly_points.size(); i ++)
+    {
+        const Pointi& P = nearly_points[i];
+        if (P.x < 0 || P.x >= image->height() || P.y < 0 || P.y >= image->width()) continue;
+
+        int total = AA_CENTER_W;
+        int r = image->getPixel(P.x, P.y)->r * AA_CENTER_W;
+        int g = image->getPixel(P.x, P.y)->g * AA_CENTER_W;
+        int b = image->getPixel(P.x, P.y)->b * AA_CENTER_W;
+        int a = image->getPixel(P.x, P.y)->a * AA_CENTER_W;
+        for(int k = 0; k < AA_RANGE; k ++)
+        {
+            const Pointi X = P + ps[k];
+            if (X.x < 0 || X.x >= image->height() || X.y < 0 || X.y >= image->width()) continue;
+            total ++;
+            r += image->getPixel(X.x, X.y)->r;
+            g += image->getPixel(X.x, X.y)->g;
+            b += image->getPixel(X.x, X.y)->b;
+            a += image->getPixel(X.x, X.y)->a;
+        }
+        pixels[i].r = r / total;
+        pixels[i].g = g / total;
+        pixels[i].b = b / total;
+        pixels[i].a = a / total;
+    }
+    for(int i = 0; i < (int)nearly_points.size(); i ++)
+    {
+        image->setPixel(nearly_points[i].x, nearly_points[i].y, pixels[i]);
+    }
 }

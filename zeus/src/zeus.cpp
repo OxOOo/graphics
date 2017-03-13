@@ -32,7 +32,8 @@ int main(int argc, char* argv[])
     LOG_INFO << "Hello World";
     LOG_INFO << "PI : " << PI;
 
-    Panel panel(600, 800);
+    const bool AA = true;
+    Panel panel(600, 800, AA);
 
     {
         const int x = 300, y = 400, r = 100;
@@ -107,7 +108,7 @@ int main(int argc, char* argv[])
         timePointEnd("drawPolygon3");
     }
 
-    panel.save("rst.png");
+    panel.save(AA ? "rstAA.png" : "rst.png");
 
     LOG_DEBUG << "ZEUS END";
 
