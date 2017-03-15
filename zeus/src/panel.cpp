@@ -57,27 +57,55 @@ void Panel::drawPolygon(std::vector<Pointi> points, Pixel pixel)
 
     std::vector<Pointi> target_points;
     for(int x = x_min; x <= x_max; x ++)
-        for(int y = y_min; y <= y_max; y ++)
+    {
+        std::vector<int> list;
+        for(int i = 0; i < (int)points.size(); i ++)
         {
-            int flag = 0;
-            for(int i = 0; i < (int)points.size(); i ++)
-            {
-                const Pointi& A = points[i];
-                const Pointi& B = points[(i+1)%points.size()];
-                const Pointi P(x, y);
+            const Pointi& A = points[i];
+            const Pointi& B = points[(i+1)%points.size()];
 
-                if (min(A.y, B.y) > P.y || max(A.y, B.y) < P.y) continue;
-                if (A.y > B.y) {
-                    if (P.y != A.y && cross(P-A, B-A) >= 0) flag ^= 1;
-                } else if (A.y < B.y) {
-                    if (P.y != B.y && cross(B-A, P-A) >= 0) flag ^= 1;
-                }
-            }
-            if(flag) {
-                this->image->setPixel(x, y, pixel);
-                target_points.push_back(Pointi(x, y));
+            if (A.x < B.x && A.x <= x && x < B.x) {
+                list.push_back(A.y + round(double(B.y - A.y) * double(x - A.x) / double(B.x - A.x)));
+            } else if (A.x > B.x && A.x > x && x >= B.x) {
+                list.push_back(A.y + round(double(B.y - A.y) * double(x - A.x) / double(B.x - A.x)));
             }
         }
+        if (list.size() > 0)
+        {
+            assert(list.size() % 2 == 0);
+            sort(list.begin(), list.end());
+            for(int i = 0; i < (int)list.size(); i += 2)
+            {
+                for(int y = list[i]; y <= list[i+1]; y ++)
+                {
+                    this->image->setPixel(x, y, pixel);
+                    target_points.push_back(Pointi(x, y));
+                }
+            }
+        }
+    }
+    // for(int x = x_min; x <= x_max; x ++)
+    //     for(int y = y_min; y <= y_max; y ++)
+    //     {
+    //         int flag = 0;
+    //         for(int i = 0; i < (int)points.size(); i ++)
+    //         {
+    //             const Pointi& A = points[i];
+    //             const Pointi& B = points[(i+1)%points.size()];
+    //             const Pointi P(x, y);
+
+    //             if (min(A.y, B.y) > P.y || max(A.y, B.y) < P.y) continue;
+    //             if (A.y > B.y) {
+    //                 if (P.y != A.y && cross(P-A, B-A) >= 0) flag ^= 1;
+    //             } else if (A.y < B.y) {
+    //                 if (P.y != B.y && cross(B-A, P-A) >= 0) flag ^= 1;
+    //             }
+    //         }
+    //         if(flag) {
+    //             this->image->setPixel(x, y, pixel);
+    //             target_points.push_back(Pointi(x, y));
+    //         }
+    //     }
     processAA(target_points);
 }
 
