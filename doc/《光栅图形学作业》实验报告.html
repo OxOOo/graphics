@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>《光栅图形学作业》实验报告</title>
+<link rel="stylesheet" href="https://stackedit.io/res-min/themes/base.css" />
+<script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+<body><div class="container"><h1 id="光栅图形学作业">光栅图形学作业</h1>
+
+
+
+<h3 id="实现的功能">实现的功能</h3>
+
+<ul>
+<li>绘制线段</li>
+<li>绘制圆</li>
+<li>多边形区域填充</li>
+<li>简单的反走样</li>
+</ul>
+
+<h3 id="结果图">结果图</h3>
+
+<p>不开启反走样： <br>
+<img src="rst.png" alt="" title=""></p>
+
+<p>开启反走样： <br>
+<img src="rstAA.png" alt="" title=""></p>
+
+
+
+<h3 id="算法说明">算法说明</h3>
+
+
+
+<h4 id="绘制线段">绘制线段</h4>
+
+<p>对于线段(点A&lt;-&gt;B点)的绘制，枚举A的横坐标和B的横坐标之间的每一个值，根据比例计算出该横坐标下对应的纵坐标值（四舍五入），该点即位于A与B的连线上，需要被绘制。</p>
+
+<p>同时，为了避免A的横坐标和B的横坐标相差太小带来的失真，对A的纵坐标和B的纵坐标之间的每一个值也要用类似的方式处理一遍。</p>
+
+<p>最终被绘制的点是上面两次计算出点的并集。</p>
+
+
+
+<h4 id="绘制圆">绘制圆</h4>
+
+<p>给定需要绘制的圆的半径<script type="math/tex" id="MathJax-Element-580">r</script>，可计算出该圆的周长<script type="math/tex" id="MathJax-Element-581">2*\pi*r</script>，则可用<script type="math/tex" id="MathJax-Element-582">\lfloor 2*2*\pi*r \rfloor</script>个点对圆进行近似；将这些点按照角度平均分配到圆周上，通过三角函数计算出他们的近似位置（四舍五入），对计算出的点进行绘制，即可得到圆。</p>
+
+<h4 id="绘制多边形">绘制多边形</h4>
+
+<p>给定需要绘制的多边形的点序列，计算出这些点的<script type="math/tex" id="MathJax-Element-576">x_{min}</script>和<script type="math/tex" id="MathJax-Element-577">x_{max}</script>，然后对在这之间的每个<script type="math/tex" id="MathJax-Element-578">x</script>，均计算出有哪些点和多边形相交，将这些点按照<script type="math/tex" id="MathJax-Element-579">y</script>排序，相邻的两个点构成一组，则在这两个点之间的每个点均需要被绘制。</p>
+
+
+
+<h4 id="反走样">反走样</h4>
+
+<p>对于上面的三种绘制情况，记录下被绘制的所有点，然后计算出其临近的点；对于这些临近的点，通过统计他的颜色和他周围的颜色，按照加权平均的算法，得出临近点的新颜色。</p>
+
+<h3 id="主要代码说明">主要代码说明</h3>
+
+<h4 id="image类">Image类</h4>
+
+<p><code>Image</code>类负责读取/写入图片，以及提供对图片像素级的操作。</p>
+
+<p><code>Image</code>类的读取和写入图片都是调用libpng的相关函数实现，本身记录了图片的类型和每个像素的RGB值，提供对外访问和修改像素的接口。</p>
+
+<p>主要接口如下：</p>
+
+<pre class="prettyprint"><code class="language-c++ hljs cpp"><span class="hljs-comment">/// 处理图片相关的功能，不包括绘图</span>
+<span class="hljs-keyword">class</span> Image
+{
+<span class="hljs-keyword">public</span>:
+    <span class="hljs-keyword">enum</span> ColorType{RGB, RGBA};
+    <span class="hljs-keyword">typedef</span> <span class="hljs-built_in">std</span>::<span class="hljs-built_in">shared_ptr</span>&lt;Image&gt; ptr;
+
+    <span class="hljs-comment">// some static functions</span>
+
+    Image(<span class="hljs-keyword">int</span> height, <span class="hljs-keyword">int</span> width);
+    ~Image();
+
+    <span class="hljs-keyword">void</span> save(<span class="hljs-keyword">const</span> <span class="hljs-built_in">std</span>::<span class="hljs-built_in">string</span>&amp; filename);
+
+    <span class="hljs-keyword">int</span> height();
+    <span class="hljs-keyword">int</span> width();
+    ColorType type();
+    <span class="hljs-comment">/// x: [0:h-1]; y: [0:w-1]</span>
+    Pixel* getPixel(<span class="hljs-keyword">int</span> x, <span class="hljs-keyword">int</span> y);
+    <span class="hljs-keyword">void</span> setPixel(<span class="hljs-keyword">int</span> x, <span class="hljs-keyword">int</span> y, Pixel pixel);
+    <span class="hljs-comment">// ... other functions</span>
+};</code></pre>
+
+
+
+<h4 id="panel类">Panel类</h4>
+
+<p><code>Panel</code>类表示画板，所有的绘制过程均调用<code>Panel</code>的相关函数实现；每个<code>Panel</code>对象会维护一个<code>Image</code>对象，所有的绘制过程，最终都会落在该<code>Image</code>对象上。</p>
+
+<p><code>Panel</code>类的主要接口如下：</p>
+
+
+
+<pre class="prettyprint"><code class="language-c++ hljs cpp"><span class="hljs-comment">// 二维世界，坐标和图片无关</span>
+<span class="hljs-keyword">class</span> Panel
+{
+    <span class="hljs-comment">// 抗锯齿的范围</span>
+    <span class="hljs-keyword">const</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">int</span> AA_RANGE = <span class="hljs-number">4</span>;
+    <span class="hljs-keyword">const</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">int</span> AA_CENTER_W = <span class="hljs-number">3</span>;
+<span class="hljs-keyword">public</span>:
+    <span class="hljs-comment">/// 高度，宽度，是否反走样</span>
+    Panel(<span class="hljs-keyword">int</span> height, <span class="hljs-keyword">int</span> width, <span class="hljs-keyword">bool</span> AA = <span class="hljs-keyword">false</span>);
+    ~Panel();
+
+    <span class="hljs-comment">/// 画线</span>
+    <span class="hljs-keyword">void</span> drawLine(<span class="hljs-keyword">int</span> x1, <span class="hljs-keyword">int</span> y1, <span class="hljs-keyword">int</span> x2, <span class="hljs-keyword">int</span> y2, Pixel pixel);
+    <span class="hljs-comment">/// 画圆</span>
+    <span class="hljs-keyword">void</span> drawCircle(<span class="hljs-keyword">int</span> x, <span class="hljs-keyword">int</span> y, <span class="hljs-keyword">int</span> r, Pixel pixel);
+    <span class="hljs-comment">/// 画多边形</span>
+    <span class="hljs-keyword">void</span> drawPolygon(<span class="hljs-built_in">std</span>::<span class="hljs-stl_container"><span class="hljs-built_in">vector</span>&lt;Pointi&gt;</span> points, Pixel pixel);
+
+    <span class="hljs-keyword">void</span> save(<span class="hljs-keyword">const</span> <span class="hljs-built_in">std</span>::<span class="hljs-built_in">string</span>&amp; filename);
+};</code></pre>
+
+
+
+<h4 id="几何相关">几何相关</h4>
+
+<p>由于代码中需要大量运用到和几何处理相关的函数，所以我在设计的时候，将几何公共的部分提取出来，放在<code>geometry.h</code>和<code>geometry.cpp</code>中，方便其他代码调用。</p>
+
+<h3 id="外部依赖">外部依赖</h3>
+
+<ul>
+<li><code>libpng</code>：读取和写入png图片</li>
+<li><code>plog</code>:输出Log</li>
+</ul></div></body>
+</html>

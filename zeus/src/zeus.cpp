@@ -32,7 +32,7 @@ int main(int argc, char* argv[])
     LOG_INFO << "Hello World";
     LOG_INFO << "PI : " << PI;
 
-    const bool AA = true;
+    const bool AA = false;
     Panel panel(600, 800, AA);
 
     {

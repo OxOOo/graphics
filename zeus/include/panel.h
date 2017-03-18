@@ -12,7 +12,7 @@ class Panel
 {
     // 抗锯齿的范围
     const static int AA_RANGE = 4;
-    const static int AA_CENTER_W = 2;
+    const static int AA_CENTER_W = 3;
 public:
     /// 高度，宽度，是否反走样
     Panel(int height, int width, bool AA = false);
