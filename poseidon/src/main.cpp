@@ -227,63 +227,49 @@ Mat getRowDelta(const Mat& delta, const Mat& MASK)
 
 void SeamCarving(Mat src, Mat& dst, std::function<void(const Mat &src, Mat &E)> E_func, const int output_height, const int output_width)
 {
-    Mat delta;
+    Mat delta = Mat::zeros(src.rows, src.cols, CV_32S);
 
-    delta = Mat::zeros(src.rows, src.cols, CV_32S);
-    while(src.cols != output_width) // 修改列
+    while(src.cols != output_width || src.rows != output_height)
     {
-        Mat MASK = getColMask(src, delta, E_func);
-
-        // ===========debug===============
-        // Mat img(src.rows, src.cols, CV_8UC3);
-        // for(int i = 0; i < src.rows; i ++)
-        //     for(int j = 0; j < src.cols; j ++)
-        //     {
-        //         img.at<Vec3b>(i, j) = src.at<Vec3b>(i, j);
-        //         if (MASK.at<int>(i, j) == 1)
-        //         {
-        //             img.at<Vec3b>(i, j) = Vec3b(0, 0, 255);
-        //         }
-        //     }
-        // char buf[100];
-        // sprintf(buf, "../seam_images/debug-cols%d.png", src.cols);
-        // imwrite(buf, img);
-
-        if (src.cols > output_width)
+        if (src.cols != output_width)
         {
-            src = deleteCol(src, MASK);
-        } else {
-            src = insertCol(src, MASK);
-            delta = getColDelta(delta, MASK);
+            Mat MASK = getColMask(src, delta, E_func);
+
+            // ===========debug===============
+            // Mat img(src.rows, src.cols, CV_8UC3);
+            // for(int i = 0; i < src.rows; i ++)
+            //     for(int j = 0; j < src.cols; j ++)
+            //     {
+            //         img.at<Vec3b>(i, j) = src.at<Vec3b>(i, j);
+            //         if (MASK.at<int>(i, j) == 1)
+            //         {
+            //             img.at<Vec3b>(i, j) = Vec3b(0, 0, 255);
+            //         }
+            //     }
+            // char buf[100];
+            // sprintf(buf, "../seam_images/debug-cols%d.png", src.cols);
+            // imwrite(buf, img);
+
+            if (src.cols > output_width)
+            {
+                src = deleteCol(src, MASK);
+            } else {
+                src = insertCol(src, MASK);
+                delta = getColDelta(delta, MASK);
+            }
         }
-    }
 
-    delta = Mat::zeros(src.rows, src.cols, CV_32S);
-    while(src.rows != output_height) // 修改行
-    {
-        Mat MASK = getRowMask(src, delta, E_func);
-
-        // ===========debug===============
-        // Mat img(src.rows, src.cols, CV_8UC3);
-        // for(int i = 0; i < src.rows; i ++)
-        //     for(int j = 0; j < src.cols; j ++)
-        //     {
-        //         img.at<Vec3b>(i, j) = src.at<Vec3b>(i, j);
-        //         if (MASK.at<int>(i, j) == 1)
-        //         {
-        //             img.at<Vec3b>(i, j) = Vec3b(0, 0, 255);
-        //         }
-        //     }
-        // char buf[100];
-        // sprintf(buf, "../seam_images/debug-rows%d.png", src.rows);
-        // imwrite(buf, img);
-
-        if (src.rows > output_height)
+        if (src.rows != output_height)
         {
-            src = deleteRow(src, MASK);
-        } else {
-            src = insertRow(src, MASK);
-            delta = getRowDelta(delta, MASK);
+            Mat MASK = getRowMask(src, delta, E_func);
+
+            if (src.rows > output_height)
+            {
+                src = deleteRow(src, MASK);
+            } else {
+                src = insertRow(src, MASK);
+                delta = getRowDelta(delta, MASK);
+            }
         }
     }
 
@@ -360,9 +346,9 @@ int main()
                 E.at<int>(i, j) = min(E.at<int>(i, j), 255);
     };
 
-    Mat img = imread("../seam_images/1.jpg", CV_LOAD_IMAGE_COLOR);
+    Mat img = imread("../seam_images/4.jpg", CV_LOAD_IMAGE_COLOR);
     Mat dst;
-    SeamCarving(img, dst, laplacian_func, img.rows, img.cols-200);
+    SeamCarving(img, dst, laplacian_func, img.rows+100, img.cols+100);
     imwrite("../seam_images/temp.png", dst);
 
     return 0;
