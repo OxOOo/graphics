@@ -276,6 +276,66 @@ void SeamCarving(Mat src, Mat& dst, std::function<void(const Mat &src, Mat &E)> 
     src.copyTo(dst);
 }
 
+void RemoveItem(Mat src, Mat& dst, std::function<void(const Mat &src, Mat &E)> E_func, Vec3b flag)
+{
+    Mat removing = Mat::zeros(src.rows, src.cols, CV_32S);
+    for(int i = 0; i < src.rows; i ++)
+        for(int j = 0; j < src.cols; j ++)
+        {
+            const int dx[] = {0, 0, 1, -1, 0};
+            const int dy[] = {1, -1, 0, 0, 0};
+            int nums = 0;
+            for(int d = 0; d < 5; d ++)
+            {
+                int x = i + dx[d], y = j + dy[d];
+                if (0 <= x && x < src.rows && 0 <= y && y < src.cols && src.at<Vec3b>(x, y) == flag)
+                    nums ++;
+            }
+            if (nums > 0) removing.at<int>(i, j) = 1;
+        }
+
+    while(true)
+    {
+        Mat delta = Mat::zeros(src.rows, src.cols, CV_32S);
+        int nums = 0;
+        for(int i = 0; i < src.rows; i ++)
+            for(int j = 0; j < src.cols; j ++)
+                if (removing.at<int>(i, j))
+                {
+                    nums ++;
+                    delta.at<int>(i, j) = -1e5;
+                }
+        if (nums > 0)
+        {
+            Mat MASK = getColMask(src, delta, E_func);
+            // ===========debug===============
+            Mat img(src.rows, src.cols, CV_8UC3);
+            for(int i = 0; i < src.rows; i ++)
+                for(int j = 0; j < src.cols; j ++)
+                {
+                    img.at<Vec3b>(i, j) = src.at<Vec3b>(i, j);
+                    if (MASK.at<int>(i, j) == 1)
+                    {
+                        img.at<Vec3b>(i, j) = Vec3b(0, 0, 255);
+                    }
+                }
+            char buf[100];
+            sprintf(buf, "../seam_images/debug-cols%d.png", src.cols);
+            imwrite(buf, img);
+
+            src = deleteCol(src, MASK);
+            for(int i = 0; i < src.rows; i ++)
+                for(int j = 0, offset = 0; j < src.cols; j ++)
+                    if (MASK.at<int>(i, j) == 0)
+                    {
+                        removing.at<int>(i, offset) = removing.at<int>(i, j);
+                        offset ++;
+                    }
+        } else break;
+    }
+    src.copyTo(dst);
+}
+
 class EOperator
 {
 private:
@@ -346,10 +406,15 @@ int main()
                 E.at<int>(i, j) = min(E.at<int>(i, j), 255);
     };
 
-    Mat img = imread("../seam_images/4.jpg", CV_LOAD_IMAGE_COLOR);
+    // Mat img = imread("../seam_images/4.jpg", CV_LOAD_IMAGE_COLOR);
+    // Mat dst;
+    // SeamCarving(img, dst, laplacian_func, img.rows+100, img.cols+100);
+    // imwrite("../seam_images/temp.png", dst);
+
+    Mat img = imread("../seam_images/remove/6(colored).png", CV_LOAD_IMAGE_COLOR);
     Mat dst;
-    SeamCarving(img, dst, laplacian_func, img.rows+100, img.cols+100);
-    imwrite("../seam_images/temp.png", dst);
+    RemoveItem(img, dst, laplacian_func, Vec3b(0, 255, 0));
+    imwrite("../seam_images/remove/6(removed).png", dst);
 
     return 0;
 }
