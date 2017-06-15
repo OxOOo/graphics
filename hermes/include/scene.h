@@ -12,15 +12,16 @@
 class Scene
 {
 public:
-    Scene();
+    Scene(int maxdeep);
     ~Scene();
 
     Object::ptr putObject(Object::ptr obj);
     Light::ptr putLight(Light::ptr light);
-    RGB tracing(const Ray& ray, int deep) const; // 光线追踪
+    RGB tracing(const Ray& ray, int remaindeep) const; // 光线追踪
     cv::Mat render(const Camera& camera, int imgsize) const;
 
 private:
+    const int maxdeep;
     vector<Object::ptr> objs;
     vector<Light::ptr> lights;
 };

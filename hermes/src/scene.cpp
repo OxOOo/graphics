@@ -1,7 +1,7 @@
 #include "scene.h"
 #include "time_log.h"
 
-Scene::Scene() {}
+Scene::Scene(int maxdeep): maxdeep(maxdeep) {}
 
 Scene::~Scene() {}
 
@@ -17,7 +17,7 @@ Light::ptr Scene::putLight(Light::ptr light)
     return light;
 }
 
-RGB Scene::tracing(const Ray& ray, int deep) const // 光线追踪
+RGB Scene::tracing(const Ray& ray, int remaindeep) const // 光线追踪
 {
     double mint = 1e100;
     Object::IntersectInfo mininfo;
@@ -43,8 +43,13 @@ RGB Scene::tracing(const Ray& ray, int deep) const // 光线追踪
                     reachable = false;
             if (reachable) possible_lights.push_back(light);
         }
-        RGB mrgb = minobj->material->sample(ray, mininfo.p, mininfo.n, possible_lights);
-        return mrgb;
+        RGB rgb = minobj->material->sample(ray, mininfo.p, mininfo.n, possible_lights)*(1-minobj->material->reflectiveness);
+        if (dcmp(minobj->material->reflectiveness) > 0 && remaindeep > 0) {
+            Vector r = mininfo.n*(-2 * Dot(mininfo.n, ray.d)) + ray.d;
+            RGB reflected = tracing(Ray(mininfo.p, r), remaindeep-1);
+            rgb = rgb + reflected*minobj->material->reflectiveness;
+        }
+        return rgb;
     } else {
         return RGB::black();
     }
@@ -59,7 +64,7 @@ cv::Mat Scene::render(const Camera& camera, int imgsize) const
     {
         for(int j = 0; j < imgsize; j ++)
         {
-            RGB c = tracing(camera.generateRay((j+0.5)/imgsize, (i+0.5)/imgsize), 0);
+            RGB c = tracing(camera.generateRay((j+0.5)/imgsize, (i+0.5)/imgsize), maxdeep);
             c.min();
             img.at<cv::Vec3b>(i, j) = cv::Vec3b(255*c.b, 255*c.g, 255*c.r);
         }

@@ -25,11 +25,11 @@ int main()
     // test();
     // return 0;
 
-    Scene scene;
+    Scene scene(5);
     scene.putLight(Light::ptr(new LineLight(RGB::white(), Vector(-1, 1, -1))));
-    scene.putObject(Object::ptr(new SphereObject(Point(-1, 0, 0), 0.7, Material::ptr(new PhongMaterial(RGB::red(), RGB::white(), 15)))));
-    scene.putObject(Object::ptr(new SphereObject(Point(1, 0, 0), 0.7, Material::ptr(new PhongMaterial(RGB::red(), RGB::white(), 15)))));
-    scene.putObject(Object::ptr(new PlaneObject(Point(0, 0, 1), 1.5, Material::ptr(new GridMaterial(3)))));
+    scene.putObject(Object::ptr(new SphereObject(Point(-1, 0, 0), 0.7, Material::ptr(new PhongMaterial(RGB::red(), RGB::white(), 15, 0.25)))));
+    scene.putObject(Object::ptr(new SphereObject(Point(1, 0, 0), 0.7, Material::ptr(new PhongMaterial(RGB::red(), RGB::white(), 15, 0.25)))));
+    scene.putObject(Object::ptr(new PlaneObject(Point(0, 0, 1), 1.5, Material::ptr(new GridMaterial(3, 0.25)))));
     
     Camera camera(Point(0, -5, 0), Vector(0, 1, 0), Vector(0, 0, 1), 60);
     cv::Mat img = scene.render(camera, 500);
