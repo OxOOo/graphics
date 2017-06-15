@@ -5,6 +5,8 @@
 #include "rgb.h"
 #include "geometry.h"
 
+class Object;
+
 // 光照
 class Light
 {
@@ -20,6 +22,8 @@ public:
 
     // 获取颜色
     virtual Info light(const Point& p) const = 0;
+
+    virtual bool reachable(const Point& p, const Object* obj) const = 0;
 };
 
 #endif // LIGHT_H

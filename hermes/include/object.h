@@ -2,11 +2,8 @@
 #define OBJECT_H
 
 #include "const.h"
-#include "light.h"
 #include "geometry.h"
 #include "material.h"
-
-class Scene;
 
 // 物品基类
 class Object

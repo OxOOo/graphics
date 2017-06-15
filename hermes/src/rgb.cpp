@@ -2,7 +2,7 @@
 #include "const.h"
 
 RGB::RGB(): r(0), g(0), b(0) {}
-RGB::RGB(double r, double g, double b): r(r), g(g), b(g) {}
+RGB::RGB(double r, double g, double b): r(r), g(g), b(b) {}
 
 RGB RGB::modulate(const RGB& c) const
 {

@@ -34,7 +34,16 @@ RGB Scene::tracing(const Ray& ray, int deep) const // 光线追踪
     }
     if (minobj)
     {
-        RGB mrgb = minobj->material->sample(ray, mininfo.p, mininfo.n, lights);
+        vector<Light::ptr> possible_lights;
+        for(auto light: lights)
+        {
+            bool reachable = true;
+            for(int i = 0; i < (int)objs.size() && reachable; i ++)
+                if (!light->reachable(mininfo.p, objs[i].get()))
+                    reachable = false;
+            if (reachable) possible_lights.push_back(light);
+        }
+        RGB mrgb = minobj->material->sample(ray, mininfo.p, mininfo.n, possible_lights);
         return mrgb;
     } else {
         return RGB::black();

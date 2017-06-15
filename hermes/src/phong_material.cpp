@@ -19,8 +19,9 @@ RGB PhongMaterial::sample(const Ray& ray, const Point& p, const Vector& n, const
     double diffuseFactor = Dot(n, L);
     double specularFactor = Dot(Normalize(L - ray.d), n); // FIXME Normalize(ray.d)
 
-    RGB diffuseTerm = diffuse*(max(diffuseFactor, 0.0));
-    RGB specularTerm = specular*(pow(max(specularFactor, 0.0), shininess));
+    RGB diffuseTerm = diffuse*max(diffuseFactor, 0.0);
+    RGB specularTerm = specular*pow(max(specularFactor, 0.0), shininess);
 
     return linfo.rgb.modulate(diffuseTerm + specularTerm);
+    // return linfo.rgb.modulate(diffuseTerm);
 }
