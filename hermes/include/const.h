@@ -5,14 +5,13 @@
 
 #include <vector>
 #include <memory>
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
+#include <string>
+#include <cmath>
+#include <iostream>
 
 using namespace std;
-
-struct RGB
-{
-    double r, g, b; // [0, 1]
-    RGB() {}
-    RGB(double r, double g, double b): r(r), g(g), b(g) {}
-};
 
 #endif // CONST_H

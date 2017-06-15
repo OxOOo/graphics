@@ -5,6 +5,7 @@
 #include "geometry.h"
 #include "light.h"
 #include "object.h"
+#include "camera.h"
 #include <opencv2/opencv.hpp>
 
 // 场景
@@ -17,7 +18,7 @@ public:
     Object::ptr putObject(Object::ptr obj);
     Light::ptr putLight(Light::ptr light);
     RGB tracing(const Ray& ray, int deep) const; // 光线追踪
-    cv::Mat render(const Point& view_point, const Rect& view_rect, int output_height, int output_width) const;
+    cv::Mat render(const Camera& camera, int imgsize) const;
 
 private:
     vector<Object::ptr> objs;

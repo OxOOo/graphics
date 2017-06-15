@@ -30,6 +30,10 @@ Vector operator /(const Vector& V, double p)
 {
     return Vector(V.x/p, V.y/p, V.z/p);
 }
+Vector operator -(const Vector& V)
+{
+    return Vector(-V.x, -V.y, -V.z);
+}
 
 double Dot(const Vector& A, const Vector& B)
 {
@@ -39,15 +43,25 @@ double Length(const Vector& V)
 {
     return sqrt(V.x*V.x+V.y*V.y+V.z*V.z);
 }
-Vector Cross(const Vector&A, const Vector& B)
+double SqrLength(const Vector& V)
+{
+    return V.x*V.x+V.y*V.y+V.z*V.z;
+}
+Vector Cross(const Vector& A, const Vector& B)
 {
     return Vector(A.y*B.z-A.z*B.y, A.z*B.x-A.x*B.z, A.x*B.y-A.y*B.x);
 }
+Vector Normalize(const  Vector& V)
+{
+    double l = Length(V);
+    if (dcmp(l) == 0) return Vector(0, 0, 0);
+    return V/l;
+}
 
-double ImpactWithSurface(const Ray& ray, const Vector& n, const Vector& D) // 和面求交点
+double IntersectWithSurface(const Ray& ray, const Vector& n, double D) // 和面求交点
 {
     // t = -|D+n*ray.s|/|n*ray.d|
-    double b = Length(Cross(n, ray.d));
+    double b = Dot(n, ray.d);
     if (dcmp(b) == 0) return -1;
-    return -Length(D+Cross(n, ray.s))/b;
+    return -(D+Dot(n, ray.s))/b;
 }

@@ -19,7 +19,7 @@ public:
     virtual RGB render(const Ray& ray, double t, const Scene* scene, int deep, const vector<Light::ptr>& possible_ligts) const = 0;
 
     // 光线碰撞，返回t使得P=ray.s+t*rat.d在图形上
-    virtual double impact(const Ray& ray) const = 0;
+    virtual double intersect(const Ray& ray) const = 0;
 };
 
 #endif // OBJECT_H
