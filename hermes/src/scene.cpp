@@ -20,19 +20,22 @@ Light::ptr Scene::putLight(Light::ptr light)
 RGB Scene::tracing(const Ray& ray, int deep) const // 光线追踪
 {
     double mint = 1e100;
+    Object::IntersectInfo mininfo;
     Object::ptr minobj;
     for(int i = 0; i < (int)objs.size(); i ++)
     {
-        double t = objs[i]->intersect(ray);
-        if (t > 0 && mint > t)
+        Object::IntersectInfo tmp = objs[i]->intersect(ray);
+        if (tmp.t > 0 && mint > tmp.t)
         {
-            mint = t;
+            mint = tmp.t;
+            mininfo = tmp;
             minobj = objs[i];
         }
     }
     if (minobj)
     {
-        return minobj->render(ray, mint, this, deep+1, lights);
+        RGB mrgb = minobj->material->sample(ray, mininfo.p, mininfo.n, lights);
+        return mrgb;
     } else {
         return RGB::black();
     }

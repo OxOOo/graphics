@@ -4,6 +4,7 @@
 #include "const.h"
 #include "light.h"
 #include "geometry.h"
+#include "material.h"
 
 class Scene;
 
@@ -11,15 +12,22 @@ class Scene;
 class Object
 {
 public:
-    Object();
-    virtual ~Object();
+    const Material::ptr material;
+    Object(Material::ptr material): material(material) {}
+    virtual ~Object() {}
     typedef shared_ptr<Object> ptr;
-
-    // 渲染，返回RGB
-    virtual RGB render(const Ray& ray, double t, const Scene* scene, int deep, const vector<Light::ptr>& possible_ligts) const = 0;
+    
+    struct IntersectInfo
+    {
+        double t;
+        Point p;
+        Vector n;
+    };
 
     // 光线碰撞，返回t使得P=ray.s+t*rat.d在图形上
-    virtual double intersect(const Ray& ray) const = 0;
+    virtual IntersectInfo intersect(const Ray& ray) const = 0;
 };
+
+static Object::IntersectInfo NoIntersect = (Object::IntersectInfo){-1, Point(), Vector()};
 
 #endif // OBJECT_H

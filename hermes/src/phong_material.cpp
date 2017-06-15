@@ -8,12 +8,12 @@ PhongMaterial::PhongMaterial(const RGB& diffuse, const RGB& specular, double shi
 
 }
 
-RGB PhongMaterial::sample(const Ray& ray, double t, const Vector& n, const vector<Light::ptr>& lights) const
+RGB PhongMaterial::sample(const Ray& ray, const Point& p, const Vector& n, const vector<Light::ptr>& lights) const
 {
     if (lights.size() == 0) return RGB::black();
     assert(lights.size() == 1);
 
-    Light::Info linfo = lights[0]->light(ray.s + ray.d*t);
+    Light::Info linfo = lights[0]->light(p);
     Vector L = Normalize(-linfo.v2p);
 
     double diffuseFactor = Dot(n, L);

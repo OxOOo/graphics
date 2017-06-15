@@ -11,7 +11,7 @@ public:
     // 漫反射颜色，镜面反射颜色，闪光度
     PhongMaterial(const RGB& diffuse, const RGB& specular, double shininess, double reflectiveness = 0);
 
-    virtual RGB sample(const Ray& ray, double t, const Vector& n, const vector<Light::ptr>& lights) const;
+    virtual RGB sample(const Ray& ray, const Point& p, const Vector& n, const vector<Light::ptr>& lights) const;
 
 private:
     RGB diffuse;

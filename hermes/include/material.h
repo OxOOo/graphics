@@ -16,7 +16,7 @@ public:
     typedef shared_ptr<Material> ptr;
 
     // 采样
-    virtual RGB sample(const Ray& ray, double t, const Vector& n, const vector<Light::ptr>& lights) const = 0;
+    virtual RGB sample(const Ray& ray, const Point& p, const Vector& n, const vector<Light::ptr>& lights) const = 0;
 };
 
 #endif // MATERIAL_H
