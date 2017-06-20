@@ -6,6 +6,7 @@
 #include "rgb.hpp"
 #include "light.hpp"
 #include <assert.h>
+#include <opencv2/opencv.hpp>
 
 // 材质
 class Material
@@ -17,6 +18,7 @@ public:
     double refract_n; // 折射率
     double high_light; // 高光系数，phong模型
     RGB absorb_color;
+    cv::Mat texture; // 纹理
 
     Material() {}
     virtual ~Material() {}
@@ -38,6 +40,28 @@ public:
         RGB specularTerm = linfo.rgb*pow(max(specularFactor, 0.0), 20)*high_light;
 
         return diffuseTerm + specularTerm;
+    }
+
+    bool hasTexture() const {
+        return texture.rows > 0;
+    }
+
+    RGB getSmoothTexture(double u , double v ) const
+    {
+        double U = ( u - floor( u ) ) * texture.rows;
+        double V = ( v - floor( v ) ) * texture.cols;
+        int U1 = ( int ) floor( U + 1e-3 ) , U2 = U1 + 1;
+        int V1 = ( int ) floor( V + 1e-3 ) , V2 = V1 + 1;
+        double rat_U = U2 - U;
+        double rat_V = V2 - V;
+        if ( U1 < 0 ) U1 = texture.rows - 1; if ( U2 == texture.rows ) U2 = 0;
+        if ( V1 < 0 ) V1 = texture.cols - 1; if ( V2 == texture.cols ) V2 = 0;
+        RGB ret;
+        ret = ret + RGB(texture.at<cv::Vec3b>(U1, V1)) * rat_U * rat_V;
+        ret = ret + RGB(texture.at<cv::Vec3b>(U1, V2)) * rat_U * ( 1 - rat_V );
+        ret = ret + RGB(texture.at<cv::Vec3b>(U2, V1)) * ( 1 - rat_U ) * rat_V;
+        ret = ret + RGB(texture.at<cv::Vec3b>(U2, V2)) * ( 1 - rat_U ) * ( 1 - rat_V );
+        return ret;
     }
 };
 

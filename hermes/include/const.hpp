@@ -14,6 +14,8 @@
 
 using namespace std;
 
+const double WEIGHT_EPS = 1e-2;
+
 struct CollideInfo
 {
     double t;
@@ -29,7 +31,5 @@ struct LightInfo
     RGB rgb;
     Ray light;
 };
-
-#define WEIGHT_EPS (1e-2)
 
 #define RAND() (rand()/(double)(RAND_MAX))

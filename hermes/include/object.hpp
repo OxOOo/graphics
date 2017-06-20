@@ -18,8 +18,8 @@ public:
     virtual CollideInfo collide(const Ray& ray) const = 0;
     // 内部光线碰撞
     virtual CollideInfo innerCollide(const Ray& ray) const = 0;
-    // 光线折射,有折射光线则返回true
-    virtual bool refract(const CollideInfo& cinfo, Ray& output_ray) const = 0;
+    // 获取纹理
+    virtual RGB getTexture(const CollideInfo& cinfo) const = 0;
 };
 
 // 平面
@@ -28,8 +28,15 @@ class PlaneObject: public Object
 private:
     Vector n;
     double D;
+    Vector dx, dy;
+    double texture_scale;
 public:
-    PlaneObject(Vector n, double D): n(Normalize(n)), D(D) {}
+    PlaneObject(Vector n, double D, double texture_scale = 1): n(Normalize(n)), D(D), texture_scale(texture_scale) {
+        dx = Cross(n, Vector(1, 23, 1));
+        dy = Cross(n, dx);
+        dx = Normalize(dx)*texture_scale;
+        dy = Normalize(dy)*texture_scale;
+    }
 
     virtual CollideInfo collide(const Ray& ray) const {
         double t = CollideWithSurface(ray, n, D);
@@ -39,11 +46,10 @@ public:
     virtual CollideInfo innerCollide(const Ray& ray) const {
         return NoCollide;
     }
-    virtual bool refract(const CollideInfo& cinfo, Ray& output_ray) const {
-        Vector output_v;
-        if (!Refract(cinfo.rayd, cinfo.n, material->refract_n, output_v)) return false;
-        output_ray = Ray(cinfo.p, output_v);
-        return true;
+    virtual RGB getTexture(const CollideInfo& cinfo) const {
+        double u = Dot( dx, cinfo.p ) / texture_scale;
+        double v = Dot( dy, cinfo.p ) / texture_scale;
+        return material->getSmoothTexture( u , v );
     }
 };
 
@@ -71,19 +77,8 @@ public:
         Point p = ray.s + ray.d*tp*2;
         return (CollideInfo){tp*2, p, (center-p)/radius, ray.d};
     }
-    virtual bool refract(const CollideInfo& cinfo, Ray& output_ray) const {
-        Vector output_v1;
-        if (!Refract(cinfo.rayd, cinfo.n, material->refract_n, output_v1)) {
-            return false;
-        }
-        double tp = Dot(output_v1, center-cinfo.p);
-        Point p = cinfo.p + output_v1*tp*2;
-        Vector output_v2;
-        if (!Refract(output_v1, (center-p)/radius, 1.0/material->refract_n, output_v2)) {
-            return false;
-        }
-        output_ray = Ray(p, output_v2);
-        return true;
+    virtual RGB getTexture(const CollideInfo& cinfo) const {
+        return RGB::white(); // FIXME
     }
 };
 

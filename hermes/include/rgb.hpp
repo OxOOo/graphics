@@ -1,12 +1,15 @@
 #ifndef RGB_H
 #define RGB_H
 
+#include <opencv2/opencv.hpp>
+
 class RGB
 {
 public:
     double r, g, b; // [0, 1]
     RGB();
     RGB(double r, double g, double b);
+    RGB(cv::Vec3b color);
 
     static RGB black();
     static RGB white();

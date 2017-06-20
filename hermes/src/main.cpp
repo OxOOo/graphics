@@ -42,13 +42,14 @@ int main()
     sphere2_m->high_light = 0.6;
     sphere2_m->absorb_color = RGB(1, 0, 0);
 
-    auto object_m =scene.putObject(Object::ptr(new PlaneObject(Point(0, 0, 1), 1)))->material = Material::ptr(new GridMaterial(3));
+    auto object_m =scene.putObject(Object::ptr(new PlaneObject(Point(0, 0, 1), 1, 20)))->material = Material::ptr(new PlainMaterial(RGB::white())); // Material::ptr(new GridMaterial(3));
     object_m->reflect_factor = 0.15;
     object_m->refract_factor = 0;
     object_m->diffuse_factor = 1.1;
     object_m->refract_n = 1.5;
     object_m->high_light = 0.3;
     object_m->absorb_color = RGB::white();
+    object_m->texture = cv::imread("floor.bmp");
 
     scene.setCamera(Camera::ptr(new PerspectiveCamera(Point(0, -5, 2), Vector(0, 1, -0.2), Vector(0, 0, 1), 60, 500)));
     

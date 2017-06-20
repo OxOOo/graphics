@@ -91,6 +91,9 @@ RGB Scene::rayTracing(const Ray& ray, const RGB& weight, Object::ptr inner_obj, 
             }
         }
         direct_color = weight.modulate(direct_color);
+        if (minobj->material->hasTexture()) {
+            direct_color = direct_color.modulate(minobj->getTexture(mincinfo));
+        }
 
         double reflect_factor = minobj->material->reflect_factor; // 当没有折射的时候发生全反射
 

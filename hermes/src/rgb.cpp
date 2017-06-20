@@ -3,6 +3,12 @@
 
 RGB::RGB(): r(0), g(0), b(0) {}
 RGB::RGB(double r, double g, double b): r(r), g(g), b(b) {}
+RGB::RGB(cv::Vec3b color)
+{
+    b = color[0]/255.0;
+    g = color[1]/255.0;
+    r = color[2]/255.0;
+}
 
 RGB RGB::modulate(const RGB& c) const
 {
