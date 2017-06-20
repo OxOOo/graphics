@@ -1,4 +1,4 @@
-#include "time_log.h"
+#include "time_log.hpp"
 #include <map>
 #include <ctime>
 #include <iostream>

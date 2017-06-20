@@ -1,5 +1,6 @@
-#include "scene.h"
-#include "time_log.h"
+#include "scene.hpp"
+#include "time_log.hpp"
+#include <assert.h>
 
 Scene::Scene(int maxdeep): maxdeep(maxdeep) {}
 
@@ -17,62 +18,123 @@ Light::ptr Scene::putLight(Light::ptr light)
     return light;
 }
 
-RGB Scene::tracing(const Ray& ray, int remaindeep) const // 光线追踪
+Camera::ptr Scene::setCamera(Camera::ptr camera)
 {
-    double mint = 1e100;
-    Object::IntersectInfo mininfo;
-    Object::ptr minobj;
-    for(int i = 0; i < (int)objs.size(); i ++)
-    {
-        Object::IntersectInfo tmp = objs[i]->intersect(ray);
-        if (tmp.t > 0 && mint > tmp.t)
-        {
-            mint = tmp.t;
-            mininfo = tmp;
-            minobj = objs[i];
-        }
-    }
-    if (minobj)
-    {
-        vector<Light::ptr> possible_lights;
-        for(auto light: lights)
-        {
-            bool reachable = true;
-            for(int i = 0; i < (int)objs.size() && reachable; i ++)
-                if (!light->reachable(mininfo.p, objs[i].get()))
-                    reachable = false;
-            if (reachable) possible_lights.push_back(light);
-        }
-        RGB rgb;
-        if (dcmp(1-minobj->material->reflectiveness) > 0) {
-            RGB mrgb = minobj->material->sample(ray, mininfo.p, mininfo.n, possible_lights);
-            rgb = rgb + mrgb*(1-minobj->material->reflectiveness);
-        }
-        if (dcmp(minobj->material->reflectiveness) > 0 && remaindeep > 0) {
-            Vector r = mininfo.n*(-2 * Dot(mininfo.n, ray.d)) + ray.d;
-            RGB reflected = tracing(Ray(mininfo.p, r), remaindeep-1);
-            rgb = rgb + reflected*minobj->material->reflectiveness;
-        }
-        return rgb;
-    } else {
-        return RGB::black();
-    }
+    this->camera = camera;
+    return camera;
 }
 
-cv::Mat Scene::render(const Camera& camera, int imgsize) const
+RGB Scene::rayTracing(const Ray& ray, const RGB& weight, Object::ptr inner_obj, int remaindeep) const // 光线追踪
 {
-    cv::Mat img(imgsize, imgsize, CV_8UC3);
-    setTimePoint("RENDER");
+    if (remaindeep <= 0) return background;
+    if (dcmp(weight.r-WEIGHT_EPS)<=0 && dcmp(weight.g-WEIGHT_EPS)<=0 && dcmp(weight.b-WEIGHT_EPS)<=0)
+        return background;
 
-    for(int i = 0; i < imgsize; i ++)
+    double mint = INF;
+    CollideInfo mincinfo = NoCollide;
+    Object::ptr minobj;
+    Light::ptr minlight;
+
+    if (inner_obj) // 内部视线
     {
-        for(int j = 0; j < imgsize; j ++)
+        minobj = inner_obj;
+        mincinfo = inner_obj->innerCollide(ray);
+    } else {
+        for(auto obj: objs)
         {
-            RGB c;
-            for(double x = j+0.25; x < j+1; x += 0.5)
-                for(double y = i+0.25; y < i+1; y += 0.5)
-                    c = c + tracing(camera.generateRay((j+0.5)/imgsize, (i+0.5)/imgsize), maxdeep);
-            c = c*0.25;
+            CollideInfo tmp = obj->collide(ray);
+            if (tmp.t > 0 && mint > tmp.t)
+            {
+                mint = tmp.t;
+                mincinfo = tmp;
+                minobj = obj;
+                minlight.reset();
+            }
+        }
+        for(auto light: lights)
+        {
+            CollideInfo tmp = light->collide(ray);
+            if (tmp.t > 0 && mint > tmp.t)
+            {
+                mint = tmp.t;
+                mincinfo = tmp;
+                minobj.reset();
+                minlight = light;
+            }
+        }
+    }
+
+    if (dcmp(mincinfo.t) < 0) return background;
+
+    if (minobj)
+    {
+        // 直接光
+        RGB direct_color = RGB::zero();
+        for(auto light: lights)
+        {
+            vector<LightInfo> ls = light->targetLights(mincinfo.p);
+            for(auto linfo: ls)
+            {
+                bool reachable = true;
+                for(auto obj: objs)
+                {
+                    CollideInfo coll = obj->collide(Ray(mincinfo.p, -linfo.light.d));
+                    if (dcmp(coll.t) > 0)
+                    {
+                        reachable = false;
+                        break;
+                    }
+                }
+                if (reachable) {
+                    direct_color = direct_color + minobj->material->sample(linfo, mincinfo)/ls.size();
+                }
+            }
+        }
+        direct_color = weight.modulate(direct_color);
+
+        double reflect_factor = minobj->material->reflect_factor; // 当没有折射的时候发生全反射
+
+        // 折射
+        RGB refract_color = RGB::zero();
+        double refract_n = inner_obj ? 1.0/minobj->material->refract_n : minobj->material->refract_n;
+        Vector refract_v;
+        if (Refract(ray.d, mincinfo.n, refract_n, refract_v)) {
+            refract_color = rayTracing(Ray(mincinfo.p, refract_v), weight*minobj->material->refract_factor, inner_obj ? NULL : minobj, remaindeep-1);
+        } else reflect_factor += minobj->material->refract_factor;
+
+        // 反射
+        Vector r = Reflect(ray.d, mincinfo.n);
+        RGB reflect_color = rayTracing(Ray(mincinfo.p, r), weight*reflect_factor, inner_obj, remaindeep-1);
+
+        if (inner_obj) {
+            double dist = mincinfo.t;
+            return  minobj->material->absorb_color.absorb(dist).modulate(direct_color + reflect_color + refract_color); // 啤酒定律
+        } else {
+            return direct_color + reflect_color + refract_color;
+        }
+    } else {
+        return weight.modulate(minlight->color);
+    }
+
+    return background;
+}
+
+cv::Mat Scene::renderRayTracing()
+{
+    const int H = camera->getHeight();
+    const int W = camera->getWidth();
+
+    cv::Mat img(H, W, CV_8UC3);
+    setTimePoint("solveRayTracing");
+
+    for(int i = 0; i < H; i ++)
+    {
+        for(int j = 0; j < W; j ++)
+        {
+            RGB c = RGB::zero();
+            vector<Ray> rays = camera->generateRay(i, j);
+            for(auto& ray: rays)
+                c = c + rayTracing(ray, RGB::one()/rays.size(), NULL, maxdeep);
             c.min();
             img.at<cv::Vec3b>(i, j) = cv::Vec3b(255*c.b, 255*c.g, 255*c.r);
         }
@@ -81,7 +143,7 @@ cv::Mat Scene::render(const Camera& camera, int imgsize) const
         cv::waitKey(1);
     }
 
-    logTimePoint("RENDER");
+    logTimePoint("solveRayTracing");
     cv::waitKey(0);
     return img;
 }
