@@ -1,7 +1,6 @@
 #include "sphere_object.h"
 
-SphereObject::SphereObject(const Point& center, double radius, Material::ptr material)
-    : Object(material)
+SphereObject::SphereObject(const Point& center, double radius)
 {
     this->center = center;
     this->radius = radius;

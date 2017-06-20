@@ -8,7 +8,7 @@
 class SphereObject: public Object
 {
 public:
-    SphereObject(const Point& center, double radius, Material::ptr material);
+    SphereObject(const Point& center, double radius);
 
     // 光线碰撞，返回t使得P=ray.s+t*rat.d在图形上
     virtual IntersectInfo intersect(const Ray& ray) const;

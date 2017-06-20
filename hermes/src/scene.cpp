@@ -43,7 +43,11 @@ RGB Scene::tracing(const Ray& ray, int remaindeep) const // 光线追踪
                     reachable = false;
             if (reachable) possible_lights.push_back(light);
         }
-        RGB rgb = minobj->material->sample(ray, mininfo.p, mininfo.n, possible_lights)*(1-minobj->material->reflectiveness);
+        RGB rgb;
+        if (dcmp(1-minobj->material->reflectiveness) > 0) {
+            RGB mrgb = minobj->material->sample(ray, mininfo.p, mininfo.n, possible_lights);
+            rgb = rgb + mrgb*(1-minobj->material->reflectiveness);
+        }
         if (dcmp(minobj->material->reflectiveness) > 0 && remaindeep > 0) {
             Vector r = mininfo.n*(-2 * Dot(mininfo.n, ray.d)) + ray.d;
             RGB reflected = tracing(Ray(mininfo.p, r), remaindeep-1);
@@ -64,7 +68,11 @@ cv::Mat Scene::render(const Camera& camera, int imgsize) const
     {
         for(int j = 0; j < imgsize; j ++)
         {
-            RGB c = tracing(camera.generateRay((j+0.5)/imgsize, (i+0.5)/imgsize), maxdeep);
+            RGB c;
+            for(double x = j+0.25; x < j+1; x += 0.5)
+                for(double y = i+0.25; y < i+1; y += 0.5)
+                    c = c + tracing(camera.generateRay((j+0.5)/imgsize, (i+0.5)/imgsize), maxdeep);
+            c = c*0.25;
             c.min();
             img.at<cv::Vec3b>(i, j) = cv::Vec3b(255*c.b, 255*c.g, 255*c.r);
         }

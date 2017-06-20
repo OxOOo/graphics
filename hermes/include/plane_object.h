@@ -7,7 +7,7 @@
 class PlaneObject: public Object
 {
 public:
-    PlaneObject(Vector n, double D, Material::ptr material);
+    PlaneObject(Vector n, double D);
 
     virtual IntersectInfo intersect(const Ray& ray) const;
 

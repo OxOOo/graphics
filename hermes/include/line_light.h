@@ -9,11 +9,10 @@
 class LineLight: public Light
 {
 private:
-    RGB color;
     Vector v;
 public:
     // v:光线来的方向
-    LineLight(const RGB& color, const Vector& v): color(color), v(Normalize(v)) {}
+    LineLight(const Vector& v): v(Normalize(v)) {}
 
     virtual Info light(const Point& p) const
     {

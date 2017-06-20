@@ -1,7 +1,6 @@
 #include "plane_object.h"
 
-PlaneObject::PlaneObject(Vector n, double D, Material::ptr material)
-    : Object(material)
+PlaneObject::PlaneObject(Vector n, double D)
 {
     this->n = Normalize(n);
     this->D = D;

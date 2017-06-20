@@ -9,8 +9,8 @@
 class Object
 {
 public:
-    const Material::ptr material;
-    Object(Material::ptr material): material(material) {}
+    Material::ptr material;
+    Object() {}
     virtual ~Object() {}
     typedef shared_ptr<Object> ptr;
     

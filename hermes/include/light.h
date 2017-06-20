@@ -11,6 +11,7 @@ class Object;
 class Light
 {
 public:
+    RGB color;
     Light() {}
     virtual ~Light() {}
     typedef shared_ptr<Light> ptr;
