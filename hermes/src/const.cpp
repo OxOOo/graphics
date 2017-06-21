@@ -2,7 +2,8 @@
 
 double RAND()
 {
-    return rand()/(double)(RAND_MAX);
+    // return rand()/(double)(RAND_MAX);
+    return double(rand() * (RAND_MAX + 1.0) + rand()) / ((RAND_MAX + 1.0) * (RAND_MAX + 1.0) - 1);
 }
 
 void splitRange(int S, int T, int n, vector<int>& rangeS, vector<int>& rangeT)

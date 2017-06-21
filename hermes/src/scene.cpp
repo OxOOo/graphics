@@ -225,7 +225,6 @@ RGB Scene::PPMTracing(int rc, const Ray& ray, const RGB& weight, Object::ptr inn
             double tmp = light->collide(ray);
             if (tmp > 0)
             {
-                mint = tmp;
                 minlight = light;
             }
         }
@@ -254,7 +253,6 @@ RGB Scene::PPMTracing(int rc, const Ray& ray, const RGB& weight, Object::ptr inn
                     CollideInfo coll = obj->collide(Ray(mincinfo.p, -linfo.light.d));
                     if (dcmp(coll.t) > 0 && dcmp(coll.t*coll.t-Length2(linfo.light.s-mincinfo.p)) < 0)
                     {
-                        // cout << objIndex(minobj) << " " << objIndex(obj) << endl;
                         reachable = false;
                         break;
                     }
@@ -399,25 +397,27 @@ cv::Mat Scene::PPMRender()
             Photon pho = light->genPhoton(times);
             PhotonTracing(pho, NULL, maxdeep);
         }
-        if (times % 100 == 0) cout << "Photon " << times << endl;
+        if (times % 1000 == 0) cout << "Photon " << times << endl;
 
-        if (times && times % 500 == 0) {
-            cv::Mat photon_img(H, W, CV_8UC3, cv::Scalar(0, 0, 0));
+        if (times && times % 50000 == 0) {
+            RGB *rgbs = new RGB[H*W];
             HitPoint* points = hitmap->getHitPoints();
             int stored_points = hitmap->getStoredPoints();
             for(int i = 0; i < stored_points; i ++)
             {
                 int rc = points[i].rc;
-                int x = rc/W, y = rc%W;
-                RGB rgb = RGB(photon_img.at<cv::Vec3b>(x, y));
-                rgb = rgb + points[i].color.modulate(points[i].weight);
-                rgb = rgb / times / R / R;
-                rgb.min();
-                // cout << x << " " << y << " " << endl;
-                // rgb.print();
-                // points[i].color.print();
-                photon_img.at<cv::Vec3b>(x, y) = cv::Vec3b(255*rgb.b, 255*rgb.g, 255*rgb.r);
+                rgbs[rc] = rgbs[rc] + points[i].color.modulate(points[i].weight);
             }
+            cv::Mat photon_img(H, W, CV_8UC3, cv::Scalar(0, 0, 0));
+            for(int i = 0; i < H; i ++)
+                for(int j = 0; j < W; j ++)
+                {
+                    int rc = i*W+j;
+                    rgbs[rc] = rgbs[rc]/times;
+                    rgbs[rc].min();
+                    photon_img.at<cv::Vec3b>(i, j) = cv::Vec3b(255*rgbs[rc].b, 255*rgbs[rc].g, 255*rgbs[rc].r);
+                }
+            delete[] rgbs;
             char buf[100];
             sprintf(buf, "%dphoton.png", times);
             cv::imwrite(buf, photon_img);

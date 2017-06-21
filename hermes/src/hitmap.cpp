@@ -1,19 +1,7 @@
 #include "hitmap.hpp"
 #include <algorithm>
+#include <assert.h>
 using namespace std;
-
-bool cmpx(const HitPoint& A, const HitPoint& B)
-{
-    return A.pos.x < B.pos.x;
-}
-bool cmpy(const HitPoint& A, const HitPoint& B)
-{
-    return A.pos.y < B.pos.y;
-}
-bool cmpz(const HitPoint& A, const HitPoint& B)
-{
-    return A.pos.z < B.pos.z;
-}
 
 HitMap::HitMap(int maxsize)
     : maxsize(maxsize), stored_points(0)
@@ -27,7 +15,7 @@ HitMap::~HitMap()
 
 void HitMap::insertPoint(const CollideInfo& cinfo, int rc, RGB weight, Material::ptr material)
 {
-    if (stored_points >= maxsize) return; // FIXME
+    assert(stored_points < maxsize);
     hitpoints[stored_points].pos = cinfo.p;
     hitpoints[stored_points].dir = cinfo.rayd;
     hitpoints[stored_points].n = cinfo.n;
@@ -68,9 +56,9 @@ void HitMap::build(int s, int t)
             maxrange = boxMax[axis]-boxMin[axis];
             index = axis;
         }
-    if (index == 0) sort(hitpoints+s, hitpoints+t, cmpx);
-    else if (index == 1) sort(hitpoints+s, hitpoints+t, cmpy);
-    else sort(hitpoints+s, hitpoints+t, cmpz);
+    sort(hitpoints+s, hitpoints+t, [index](const HitPoint& A, const HitPoint& B) {
+        return dcmp(A.pos[index] - B.pos[index]) < 0;
+    });
     int root = (s+t)/2;
     hitpoints[root].boxMin = boxMin;
     hitpoints[root].boxMax = boxMax;
@@ -86,14 +74,11 @@ void HitMap::update(int s, int t, const Photon& pho, const CollideInfo& cinfo, d
     }
     double mindis2 = 0;
     for(int axis = 0; axis < 3; axis ++)
-        if (cinfo.p[axis]+EPS < hitpoints[root].boxMin[axis])
+        if (cinfo.p[axis] < hitpoints[root].boxMin[axis])
             mindis2 += (hitpoints[root].boxMin[axis]-cinfo.p[axis])*(hitpoints[root].boxMin[axis]-cinfo.p[axis]);
-        else if (hitpoints[root].boxMax[axis]+EPS < cinfo.p[axis])
+        else if (hitpoints[root].boxMax[axis] < cinfo.p[axis])
             mindis2 += (cinfo.p[axis]-hitpoints[root].boxMax[axis])*(cinfo.p[axis]-hitpoints[root].boxMax[axis]);
-    if (dcmp(mindis2-R2-0.1)>0) {
-        // cout << mindis2 << " " << R2 << " " << fabs(mindis2-R2) << endl;
-        return;
-    }
+    if (dcmp(mindis2-R2)>0) return;
     update(s, root, pho, cinfo, R2);
     update(root+1, t, pho, cinfo, R2);
 }

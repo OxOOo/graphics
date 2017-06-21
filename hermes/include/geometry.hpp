@@ -45,6 +45,7 @@ Vector Cross(const Vector& A, const Vector& B);
 Vector Normalize(const Vector& V);
 Vector GetVerticalVector(const Vector& V); // 返回一个与给定向量垂直的向量
 Vector GetRandomVector(const Vector& N);
+Vector AssRandomVector(); // 随机向量
 
 // 和面求交点, Normalized
 double CollideWithSurface(const Ray& ray, const Vector& n, double D);

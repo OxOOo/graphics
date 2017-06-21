@@ -58,8 +58,8 @@ public:
     {
         double U = ( u - floor( u ) ) * texture.rows;
         double V = ( v - floor( v ) ) * texture.cols;
-        int U1 = ( int ) floor( U + 1e-3 ) , U2 = U1 + 1;
-        int V1 = ( int ) floor( V + 1e-3 ) , V2 = V1 + 1;
+        int U1 = ( int ) floor( U - 1e-3 ) , U2 = U1 + 1;
+        int V1 = ( int ) floor( V - 1e-3 ) , V2 = V1 + 1;
         double rat_U = U2 - U;
         double rat_V = V2 - V;
         if ( U1 < 0 ) U1 = texture.rows - 1; if ( U2 == texture.rows ) U2 = 0;

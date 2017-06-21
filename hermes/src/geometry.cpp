@@ -87,6 +87,16 @@ Vector GetRandomVector(const Vector& N)
     assert(dcmp(Length2(dy)-1) == 0);
     return dx*sin(theta)*cos(phi)+dy*sin(theta)*sin(phi)+N*cos(theta);
 }
+Vector AssRandomVector()
+{
+    double x, y, z;
+    do {
+		x = 2 * RAND() - 1;
+		y = 2 * RAND() - 1;
+		z = 2 * RAND() - 1;
+	} while ( x * x + y * y + z * z > 1 || x * x + y * y + z * z < EPS );
+    return Normalize(Vector(x, y, z));
+}
 
 double CollideWithSurface(const Ray& ray, const Vector& n, double D) // 和面求交点
 {
