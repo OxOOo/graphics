@@ -90,8 +90,9 @@ RGB Scene::rayTracing(const Ray& ray, const RGB& weight, Object::ptr inner_obj, 
                 for(auto obj: objs)
                 {
                     CollideInfo coll = obj->collide(Ray(mincinfo.p, -linfo.light.d));
-                    if (dcmp(coll.t) > 0 && dcmp(coll.t-Length(linfo.light.s-mincinfo.p)) < 0)
+                    if (dcmp(coll.t) > 0 && dcmp(coll.t*coll.t-SqrLength(linfo.light.s-mincinfo.p)) < 0)
                     {
+                        // cout << objIndex(minobj) << " " << objIndex(obj) << endl;
                         reachable = false;
                         break;
                     }
@@ -157,32 +158,30 @@ cv::Mat Scene::renderRayTracing()
         cv::waitKey(1);
     }
 
-    // int x = 0, y = 0;
+    // vector<int> rangeS, rangeT;
     // thread ts[THREADS_COUNT];
     // mutex mtx;
+    // splitRange(0, H, THREADS_COUNT, rangeS, rangeT);
+
     // for(int i = 0; i < THREADS_COUNT; i ++)
     // {
-    //     ts[i] = thread([&mtx, this, &x, &y, &img, H, W]() {
-    //         while(true)
+    //     ts[i] = thread([&mtx, this, &img, H, W](int S, int T) {
+    //         for(int x = S; x < T; x ++)
     //         {
-    //             mtx.lock();
-    //             y ++;
-    //             x += y / W;
-    //             y %= W;
-    //             if (y == 0) cout << x << endl;
-    //             const int i = x, j = y;
-    //             mtx.unlock();
-
-    //             if (x >= H) return;
-
-    //             RGB c = RGB::zero();
-    //             vector<Ray> rays = camera->generateRay(i, j);
-    //             for(auto& ray: rays)
-    //                 c = c + rayTracing(ray, RGB::one()/rays.size(), NULL, maxdeep);
-    //             c.min();
-    //             img.at<cv::Vec3b>(i, j) = cv::Vec3b(255*c.b, 255*c.g, 255*c.r);
+    //             for(int y = 0; y < W; y ++)
+    //             {
+    //                 RGB c = RGB::zero();
+    //                 vector<Ray> rays = camera->generateRay(x, y);
+    //                 for(auto& ray: rays)
+    //                     c = c + rayTracing(ray, RGB::one()/rays.size(), NULL, maxdeep);
+    //                 c.min();
+    //                 // mtx.lock();
+    //                 // img.at<cv::Vec3b>(x, y) = cv::Vec3b(255*c.b, 255*c.g, 255*c.r);
+    //                 // mtx.unlock();
+    //             }
+    //             cout << "processing : " << x << endl;
     //         }
-    //     });
+    //     }, rangeS[i], rangeT[i]);
     // }
     // for(int i = 0; i < THREADS_COUNT; i ++)
     // {
@@ -190,6 +189,7 @@ cv::Mat Scene::renderRayTracing()
     // }
 
     logTimePoint("solveRayTracing");
+    imshow("Image", img);
     cv::waitKey(0);
     return img;
 }

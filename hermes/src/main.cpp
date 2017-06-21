@@ -24,6 +24,8 @@ int main()
     // return 0;
 
     Scene scene(6, 4);
+    scene.setCamera(Camera::ptr(new PerspectiveCamera(Point(0, -2, 0), Vector(0, 1, 0), Vector(0, 0, 1), 60, 500, false)));
+    
     auto floor_m = scene.putObject(Object::ptr(new PlaneObject(Vector(0, 0, 1), 1, 10)))->material = Material::ptr(new PlainMaterial(RGB::white()));
     floor_m->reflect_factor = 0.15;
     floor_m->refract_factor = 0;
@@ -50,7 +52,7 @@ int main()
     right_m->absorb_color = RGB::white();
 
     auto top_m = scene.putObject(Object::ptr(new PlaneObject(Vector(0, 0, -1), 1, 10)))->material = Material::ptr(new PlainMaterial(RGB::white()));
-    top_m->reflect_factor = 0.15;
+    top_m->reflect_factor = 0.5;
     top_m->refract_factor = 0;
     top_m->diffuse_factor = 1.1;
     top_m->refract_n = 1.5;
@@ -82,8 +84,6 @@ int main()
     sphere2_m->refract_n = 1.5;
     sphere2_m->high_light = 0.6;
     sphere2_m->absorb_color = RGB(0, 0, 0);
-
-    scene.setCamera(Camera::ptr(new PerspectiveCamera(Point(0, -2, 0), Vector(0, 1, 0), Vector(0, 0, 1), 60, 500)));
     
     cv::Mat img = scene.renderRayTracing();
     cv::imwrite("temp.png", img);

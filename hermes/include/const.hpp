@@ -9,13 +9,14 @@
 #include <string>
 #include <cmath>
 #include <iostream>
+#include <assert.h>
 #include "geometry.hpp"
 #include "rgb.hpp"
 
 using namespace std;
 
 const double WEIGHT_EPS = 1e-2;
-const int THREADS_COUNT = 8;
+const int THREADS_COUNT = 2;
 
 struct CollideInfo
 {
@@ -33,4 +34,6 @@ struct LightInfo
     Ray light;
 };
 
-#define RAND() (rand()/(double)(RAND_MAX))
+double RAND();
+
+void splitRange(int S, int T, int n, vector<int>& rangeS, vector<int>& rangeT);
