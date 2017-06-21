@@ -2,6 +2,7 @@
 #define RGB_H
 
 #include <opencv2/opencv.hpp>
+#include <string>
 
 class RGB
 {
@@ -10,6 +11,7 @@ public:
     RGB();
     RGB(double r, double g, double b);
     RGB(cv::Vec3b color);
+    RGB(std::string color);
 
     static RGB black();
     static RGB white();

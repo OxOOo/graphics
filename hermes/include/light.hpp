@@ -17,9 +17,55 @@ public:
     // 光子映射生成光线
     virtual vector<LightInfo> genLights() const = 0;
     // 直接光照
-    virtual vector<LightInfo> targetLights(const Point& target) const = 0;
+    virtual vector<LightInfo> targetLights(const Point& target, int shade_quality) const = 0;
     // 光线碰撞，返回t使得P=ray.s+t*rat.d在图形上
-    virtual CollideInfo collide(const Ray& ray) const = 0;
+    virtual double collide(const Ray& ray) const = 0;
+};
+
+// 矩光源
+class RectLight: public Light
+{
+private:
+    Point p;
+    Vector dx, dy;
+    Vector n;
+    double D;
+public:
+    // v: 光源的朝向方向
+    RectLight(const Point& p, const Vector& dx, const Vector& dy)
+        : p(p), dx(dx), dy(dy)
+    {
+        n = Normalize(Cross(dx, dy));
+        D = -Dot(n, p);
+    }
+
+    virtual vector<LightInfo> genLights() const
+    {
+        vector<LightInfo> lights;
+        return lights;
+    }
+    virtual vector<LightInfo> targetLights(const Point& target, int shade_quality) const
+    {
+        vector<LightInfo> lights;
+        for(int i = -2 ; i < 2 ; i++ )
+            for(int j = -2 ; j < 2 ; j++ )
+                for(int k = 0; k < shade_quality; k ++)
+                {
+                    Point O = p + dx * ( ( RAND() + i ) / 2 ) + dy * ( ( RAND() + j ) / 2 );
+                    Vector V = Normalize(target - O);
+                    lights.push_back((LightInfo){color, Ray(O, V)});
+                }
+        return lights;
+    }
+    virtual double collide(const Ray& ray) const
+    {
+        double t = CollideWithSurface(ray, n, D);
+        if (dcmp(t) <= 0) return -1;
+        Point C = ray.s + ray.d*t;
+        if ( fabs( Dot(dx, C) ) > Dot(dx, dx) ) return -1;
+	    if ( fabs( Dot(dy, C) ) > Dot(dy, dy) ) return -1;
+        return t;
+    }
 };
 
 // 锥光源
@@ -43,7 +89,7 @@ public:
         vector<LightInfo> lights;
         return lights;
     }
-    virtual vector<LightInfo> targetLights(const Point& target) const
+    virtual vector<LightInfo> targetLights(const Point& target, int shade_quality) const
     {
         vector<LightInfo> lights;
         Vector v2p = Normalize(target-p);
@@ -53,9 +99,9 @@ public:
         else lights.push_back((LightInfo){RGB::black(), Ray(p, v2p)});
         return lights;
     }
-    virtual CollideInfo collide(const Ray& ray) const
+    virtual double collide(const Ray& ray) const
     {
-        return NoCollide;
+        return -1;
     }
 };
 

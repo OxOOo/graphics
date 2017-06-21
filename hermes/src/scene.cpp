@@ -1,8 +1,12 @@
 #include "scene.hpp"
 #include "time_log.hpp"
 #include <assert.h>
+#include <thread>
+#include <mutex>
 
-Scene::Scene(int maxdeep): maxdeep(maxdeep) {}
+using namespace std;
+
+Scene::Scene(int maxdeep, int shade_quality): maxdeep(maxdeep), shade_quality(shade_quality) {}
 
 Scene::~Scene() {}
 
@@ -22,6 +26,14 @@ Camera::ptr Scene::setCamera(Camera::ptr camera)
 {
     this->camera = camera;
     return camera;
+}
+
+int Scene::objIndex(Object::ptr obj) const
+{
+    for(int i = 0; i < (int)objs.size(); i ++)
+        if (obj.get() == objs[i].get())
+            return i;
+    return -1;
 }
 
 RGB Scene::rayTracing(const Ray& ray, const RGB& weight, Object::ptr inner_obj, int remaindeep) const // 光线追踪
@@ -53,18 +65,17 @@ RGB Scene::rayTracing(const Ray& ray, const RGB& weight, Object::ptr inner_obj, 
         }
         for(auto light: lights)
         {
-            CollideInfo tmp = light->collide(ray);
-            if (tmp.t > 0 && mint > tmp.t)
+            double tmp = light->collide(ray);
+            if (tmp > 0)
             {
-                mint = tmp.t;
-                mincinfo = tmp;
+                mint = tmp;
                 minobj.reset();
                 minlight = light;
             }
         }
     }
 
-    if (dcmp(mincinfo.t) < 0) return background;
+    if (!minobj && !minlight) return background;
 
     if (minobj)
     {
@@ -72,14 +83,14 @@ RGB Scene::rayTracing(const Ray& ray, const RGB& weight, Object::ptr inner_obj, 
         RGB direct_color = RGB::zero();
         for(auto light: lights)
         {
-            vector<LightInfo> ls = light->targetLights(mincinfo.p);
+            vector<LightInfo> ls = light->targetLights(mincinfo.p, shade_quality);
             for(auto linfo: ls)
             {
                 bool reachable = true;
                 for(auto obj: objs)
                 {
                     CollideInfo coll = obj->collide(Ray(mincinfo.p, -linfo.light.d));
-                    if (dcmp(coll.t) > 0)
+                    if (dcmp(coll.t) > 0 && dcmp(coll.t-Length(linfo.light.s-mincinfo.p)) < 0)
                     {
                         reachable = false;
                         break;
@@ -145,6 +156,38 @@ cv::Mat Scene::renderRayTracing()
         imshow("Image", img);
         cv::waitKey(1);
     }
+
+    // int x = 0, y = 0;
+    // thread ts[THREADS_COUNT];
+    // mutex mtx;
+    // for(int i = 0; i < THREADS_COUNT; i ++)
+    // {
+    //     ts[i] = thread([&mtx, this, &x, &y, &img, H, W]() {
+    //         while(true)
+    //         {
+    //             mtx.lock();
+    //             y ++;
+    //             x += y / W;
+    //             y %= W;
+    //             if (y == 0) cout << x << endl;
+    //             const int i = x, j = y;
+    //             mtx.unlock();
+
+    //             if (x >= H) return;
+
+    //             RGB c = RGB::zero();
+    //             vector<Ray> rays = camera->generateRay(i, j);
+    //             for(auto& ray: rays)
+    //                 c = c + rayTracing(ray, RGB::one()/rays.size(), NULL, maxdeep);
+    //             c.min();
+    //             img.at<cv::Vec3b>(i, j) = cv::Vec3b(255*c.b, 255*c.g, 255*c.r);
+    //         }
+    //     });
+    // }
+    // for(int i = 0; i < THREADS_COUNT; i ++)
+    // {
+    //     ts[i].join();
+    // }
 
     logTimePoint("solveRayTracing");
     cv::waitKey(0);

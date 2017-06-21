@@ -44,7 +44,13 @@ public:
     virtual vector<Ray> generateRay(int h, int w) const
     {
         vector<Ray> rays;
-        rays.push_back(Ray(eye, Normalize(front+basex+dx*(w+0.5)/size+basey+dy*(h+0.5)/size)));
+        for(int i = 0; i < 3; i ++)
+            for(int j = 0; j < 3; j ++)
+            {
+                double x = (w+0.5/3.0+1.0/3.0*i)/size;
+                double y = (h+0.5/3.0+1.0/3.0*j)/size;
+                rays.push_back(Ray(eye, Normalize(front+basex+dx*x+basey+dy*y)));
+            }
         return rays;
     }
 };

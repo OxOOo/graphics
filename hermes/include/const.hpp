@@ -15,6 +15,7 @@
 using namespace std;
 
 const double WEIGHT_EPS = 1e-2;
+const int THREADS_COUNT = 8;
 
 struct CollideInfo
 {

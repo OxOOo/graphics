@@ -12,7 +12,7 @@
 class Scene
 {
 public:
-    Scene(int maxdeep);
+    Scene(int maxdeep, int shade_quality);
     ~Scene();
 
     const RGB background = RGB(0.0, 0.0, 0.0);
@@ -25,7 +25,10 @@ public:
     cv::Mat renderRayTracing();
 
 private:
+    int objIndex(Object::ptr obj) const;
+
     const int maxdeep;
+    const int shade_quality;
     vector<Object::ptr> objs;
     vector<Light::ptr> lights;
     Camera::ptr camera;

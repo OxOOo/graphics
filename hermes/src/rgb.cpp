@@ -1,5 +1,13 @@
 #include "rgb.hpp"
 #include "const.hpp"
+#include <assert.h>
+
+int hex(char c)
+{
+    if ('a' <= c && c <= 'z') c = c - 'a' + 'A';
+    if ('0' <= c && c <= '9') return c-'0';
+    return c-'A'+10;
+}
 
 RGB::RGB(): r(0), g(0), b(0) {}
 RGB::RGB(double r, double g, double b): r(r), g(g), b(b) {}
@@ -8,6 +16,13 @@ RGB::RGB(cv::Vec3b color)
     b = color[0]/255.0;
     g = color[1]/255.0;
     r = color[2]/255.0;
+}
+RGB::RGB(std::string color)
+{
+    assert(color.length() == 6);
+    r = (hex(color[0])*16+hex(color[1]))/255.0;
+    g = (hex(color[2])*16+hex(color[3]))/255.0;
+    b = (hex(color[4])*16+hex(color[4]))/255.0;
 }
 
 RGB RGB::modulate(const RGB& c) const

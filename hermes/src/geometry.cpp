@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <assert.h>
 using namespace std;
 
 int dcmp(double x) // x<-EPS : -1; -EPS<=x<=EPS : 0; x>EPS : 1
