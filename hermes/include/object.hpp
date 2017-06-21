@@ -32,7 +32,7 @@ private:
     double texture_scale;
 public:
     PlaneObject(Vector n, double D, double texture_scale = 1): n(Normalize(n)), D(D), texture_scale(texture_scale) {
-        dx = Cross(n, Vector(1, 23, 1));
+        dx = GetVerticalVector(n);
         dy = Cross(n, dx);
         dx = Normalize(dx)*texture_scale;
         dy = Normalize(dy)*texture_scale;
@@ -65,11 +65,11 @@ public:
     // 光线碰撞，返回t使得P=ray.s+t*rat.d在图形上
     virtual CollideInfo collide(const Ray& ray) const {
         Vector l = center - ray.s;
-        if (dcmp(SqrLength(l)-radius*radius) <= 0) return NoCollide;
+        if (dcmp(Length2(l)-radius*radius) <= 0) return NoCollide;
         double tp = Dot(l, ray.d);
-        double d = SqrLength(l) - tp*tp;
-        if (dcmp(d - radius*radius) >= 0) return NoCollide;
-        double t = tp - sqrt(radius*radius - d);
+        double d2 = Length2(l) - tp*tp;
+        if (dcmp(d2 - radius*radius) >= 0) return NoCollide;
+        double t = tp - sqrt(radius*radius - d2);
         return (CollideInfo){t, ray.s+ray.d*t, Normalize(ray.s+ray.d*t-center), ray.d};
     }
     virtual CollideInfo innerCollide(const Ray& ray) const {

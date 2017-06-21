@@ -24,6 +24,7 @@ public:
     RGB modulate(const RGB& c) const;
     RGB absorb(double dist) const;
     void min(double t = 1);
+    void print() const;
 };
 
 RGB operator *(const RGB& c, const double p);

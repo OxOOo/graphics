@@ -15,7 +15,6 @@
 
 using namespace std;
 
-const double WEIGHT_EPS = 1e-2;
 const int THREADS_COUNT = 2;
 
 struct CollideInfo
@@ -32,6 +31,13 @@ struct LightInfo
 {
     RGB rgb;
     Ray light;
+};
+
+// 光子
+struct Photon
+{
+	RGB power;
+    Ray movement;
 };
 
 double RAND();

@@ -13,6 +13,9 @@ struct Point // 点(x, y, z)
 {
     double x, y, z;
     Point(double x = 0, double y = 0, double z = 0): x(x), y(y), z(z) {}
+    const double& operator[](int axis) const {if(axis==0)return x;else if(axis==1)return y;else return z;}
+    double& operator[](int axis) {if(axis==0)return x;else if(axis==1)return y;else return z;}
+    void print() const;
 };
 typedef Point Vector;
 
@@ -37,9 +40,11 @@ Vector operator -(const Vector& V);
 
 double Dot(const Vector& A, const Vector& B);
 double Length(const Vector& V);
-double SqrLength(const Vector& V);
+double Length2(const Vector& V);
 Vector Cross(const Vector& A, const Vector& B);
-Vector Normalize(const  Vector& V);
+Vector Normalize(const Vector& V);
+Vector GetVerticalVector(const Vector& V); // 返回一个与给定向量垂直的向量
+Vector GetRandomVector(const Vector& N);
 
 // 和面求交点, Normalized
 double CollideWithSurface(const Ray& ray, const Vector& n, double D);

@@ -6,13 +6,14 @@
 #include "light.hpp"
 #include "object.hpp"
 #include "camera.hpp"
+#include "hitmap.hpp"
 #include <opencv2/opencv.hpp>
 
 // 场景
 class Scene
 {
 public:
-    Scene(int maxdeep, int shade_quality);
+    Scene();
     ~Scene();
 
     const RGB background = RGB(0.0, 0.0, 0.0);
@@ -21,14 +22,21 @@ public:
     Light::ptr putLight(Light::ptr light);
     Camera::ptr setCamera(Camera::ptr camera);
 
-    RGB rayTracing(const Ray& ray, const RGB& weight, Object::ptr inner_obj, int remaindeep = -1) const; // 光线追踪
+    RGB rayTracing(const Ray& ray, const RGB& weight, Object::ptr inner_obj, int remaindeep) const; // 光线追踪
     cv::Mat renderRayTracing();
+
+    RGB PPMTracing(int rc, const Ray& ray, const RGB& weight, Object::ptr inner_obj, int remaindeep);
+    void PhotonTracing(Photon pho, Object::ptr inner_obj, int remaindeep);
+    cv::Mat PPMRender();
 
 private:
     int objIndex(Object::ptr obj) const;
 
-    const int maxdeep;
-    const int shade_quality;
+    const int maxdeep = 3;
+    const int shade_quality = 1;
+    const double R = 0.01;
+    HitMap::ptr hitmap = HitMap::ptr(new HitMap(2000*10000));
+
     vector<Object::ptr> objs;
     vector<Light::ptr> lights;
     Camera::ptr camera;

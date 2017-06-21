@@ -1,6 +1,8 @@
 #include "rgb.hpp"
 #include "const.hpp"
 #include <assert.h>
+#include <iostream>
+using namespace std;
 
 int hex(char c)
 {
@@ -40,6 +42,11 @@ void RGB::min(double t)
     r = std::min(r, t);
     g = std::min(g, t);
     b = std::min(b, t);
+}
+
+void RGB::print() const
+{
+    cout << "RGB : " << r << " " << b << " " << g << endl;
 }
 
 RGB operator *(const RGB& c, const double p)

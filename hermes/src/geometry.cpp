@@ -1,4 +1,5 @@
 #include "geometry.hpp"
+#include "const.hpp"
 
 #include <cmath>
 #include <iostream>
@@ -9,6 +10,11 @@ int dcmp(double x) // x<-EPS : -1; -EPS<=x<=EPS : 0; x>EPS : 1
 {
     if (-EPS < x && x < EPS) return 0;
     return x < 0 ? -1 : 1;
+}
+
+void Point::print() const
+{
+    cout << "Point: " << x << " " << y << " " << z << endl;
 }
 
 bool operator ==(const Point& A, const Point& B)
@@ -49,7 +55,7 @@ double Length(const Vector& V)
 {
     return sqrt(V.x*V.x+V.y*V.y+V.z*V.z);
 }
-double SqrLength(const Vector& V)
+double Length2(const Vector& V)
 {
     return V.x*V.x+V.y*V.y+V.z*V.z;
 }
@@ -57,11 +63,29 @@ Vector Cross(const Vector& A, const Vector& B)
 {
     return Vector(A.y*B.z-A.z*B.y, A.z*B.x-A.x*B.z, A.x*B.y-A.y*B.x);
 }
-Vector Normalize(const  Vector& V)
+Vector Normalize(const Vector& V)
 {
     double l = Length(V);
     if (dcmp(l) == 0) return Vector(0, 0, 0);
     return V/l;
+}
+Vector GetVerticalVector(const Vector& V)
+{
+    Vector ret = Cross(V, Vector(0, 0, 1));
+    if (dcmp(ret.x) == 0 && dcmp(ret.y) == 0 && dcmp(ret.z) == 0)
+        ret = Vector(1, 0, 0);
+    return Normalize(ret);
+}
+Vector GetRandomVector(const Vector& N)
+{
+    Vector dx = GetVerticalVector(N);
+    Vector dy = Cross(N, dx);
+    double theta = RAND()*PI/2;
+    double phi = RAND()*PI*2;
+    assert(dcmp(Length2(N)-1) == 0);
+    assert(dcmp(Length2(dx)-1) == 0);
+    assert(dcmp(Length2(dy)-1) == 0);
+    return dx*sin(theta)*cos(phi)+dy*sin(theta)*sin(phi)+N*cos(theta);
 }
 
 double CollideWithSurface(const Ray& ray, const Vector& n, double D) // 和面求交点
@@ -85,7 +109,6 @@ bool Refract(const Vector& input_v, const Vector& n, double refract_n, Vector& o
 	if ( cosT2 > EPS ) {
         output_v = Normalize(input_v * refract_n + n * ( refract_n * cosI - sqrt( cosT2 ) ) );
         return true;
-    }
-    
+    }    
     return false;
 }

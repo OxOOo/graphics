@@ -42,6 +42,14 @@ public:
         return diffuseTerm + specularTerm;
     }
 
+    double BRDF(const Vector& ray_in, const Vector& n, const Vector& ray_out)
+    {
+        double ret = 0;
+        ret += max(diffuse_factor * Dot(-ray_in, n), 0.0);
+        ret += high_light * pow(max(Dot(-ray_in, Reflect(ray_out, n)), 0.0), 20);
+        return ret;
+    }
+
     bool hasTexture() const {
         return texture.rows > 0;
     }

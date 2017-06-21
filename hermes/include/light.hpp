@@ -14,8 +14,8 @@ public:
     virtual ~Light() {}
     typedef shared_ptr<Light> ptr;
 
-    // 光子映射生成光线
-    virtual vector<LightInfo> genLights() const = 0;
+    // 生成光子
+    virtual Photon genPhoton(int iter) const = 0;
     // 直接光照
     virtual vector<LightInfo> targetLights(const Point& target, int shade_quality) const = 0;
     // 光线碰撞，返回t使得P=ray.s+t*rat.d在图形上
@@ -39,10 +39,10 @@ public:
         D = -Dot(n, p);
     }
 
-    virtual vector<LightInfo> genLights() const
+    virtual Photon genPhoton(int iter) const
     {
-        vector<LightInfo> lights;
-        return lights;
+        Point O = p + dx * (RAND()*2-1) + dy * (RAND()*2-1);
+        return (Photon){color, Ray(O, GetRandomVector(n))};
     }
     virtual vector<LightInfo> targetLights(const Point& target, int shade_quality) const
     {
@@ -84,11 +84,6 @@ public:
         this->cos_limit = cos(this->fov/2);
     }
 
-    virtual vector<LightInfo> genLights() const
-    {
-        vector<LightInfo> lights;
-        return lights;
-    }
     virtual vector<LightInfo> targetLights(const Point& target, int shade_quality) const
     {
         vector<LightInfo> lights;
