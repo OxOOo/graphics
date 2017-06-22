@@ -5,7 +5,7 @@
 
 // 几何相关
 
-const double EPS  = 1e-6;
+const double EPS  = 1e-4;
 const double PI = std::acos(-1);
 const double INF = 1e10;
 
@@ -26,6 +26,11 @@ struct Line // 线(s+t*d)
     Line(Point s = Point(), Vector d = Vector()) : s(s), d(d) {}
 };
 typedef Line Ray;
+
+struct Triangle
+{
+    
+};
 
 int dcmp(double x); // x<-EPS : -1; -EPS<=x<=EPS : 0; x>EPS : 1
 

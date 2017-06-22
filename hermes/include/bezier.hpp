@@ -11,6 +11,7 @@ public:
 
     void append(const Point& p);
     Point P(double t) const; // 点坐标
+    Point P(double t, double theta) const;
     Vector Pt(double t) const; // 斜率
     cv::Mat draw(int size = 200) const;
     CollideInfo collide(const Ray& ray) const;

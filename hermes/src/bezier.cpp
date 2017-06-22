@@ -37,6 +37,12 @@ Point Bezier::P(double t) const
     return mat[0][0];
 }
 
+Point Bezier::P(double t, double theta) const
+{
+    Point p = P(t);
+    return Point(p.x*cos(theta), p.x*sin(theta), p.z);
+}
+
 Vector Bezier::Pt(double t) const
 {
     assert(points.size() == 3);
@@ -66,10 +72,10 @@ CollideInfo Bezier::collide(const Ray& ray) const
 
     auto F = [&ray, this](const Matrix<double,3,1>& in) {
         double x = in[0], theta = in[1], t = in[2];
-        Point p = P(x);
+        Point p = P(x, theta);
         Matrix<double,3,1> ret;
-        ret[0] = p.x*cos(theta)-ray.s.x-ray.d.x*t;
-        ret[1] = p.x*sin(theta)-ray.s.y-ray.d.y*t;
+        ret[0] = p.x-ray.s.x-ray.d.x*t;
+        ret[1] = p.y-ray.s.y-ray.d.y*t;
         ret[2] = p.z-ray.s.z-ray.d.z*t;
         return ret;
     };
@@ -87,34 +93,36 @@ CollideInfo Bezier::collide(const Ray& ray) const
     Matrix<double,3,1> solution;
     double R2 = 1e10, dis = 1e10;
 
-    double Len = Length(ray.s);
-    for(int times = 8; times && dcmp(R2) > 0; times --)
-    {
-        Matrix<double,3,1> x;
-        x[0] = RAND();
-        x[1] = RAND()*PI*2;
-        x[2] = (times-2)*Len/8.0;
-
-        for(int iter = 7; iter && dcmp(R2) > 0; iter --)
+    for(int xtimes = 0; xtimes < 3; xtimes ++)
+        for(int thetatimes = 0; thetatimes < 5; thetatimes ++)
         {
-            auto tmp = F(x);
-            if (dcmp(x[0])>=0 && dcmp(x[0]-1)<=0 && dcmp(x[2])>=0 && dcmp(x[2]-dis)<=0 && dcmp(tmp[0]*tmp[0]+tmp[1]*tmp[1]+tmp[2]*tmp[2])<=0)
+            Matrix<double,3,1> x;
+            x[0] = 0.5/3.0+xtimes/3.0;
+            x[1] = PI*2*0.5/5.0+thetatimes*PI*2/5.0;
+            Point p = P(x[0], x[1]);
+            Vector l = p - ray.s;
+            x[2] = Dot(l, ray.d);
+
+            for(int iter = 15; iter && dcmp(R2) > 0; iter --)
             {
-                R2 = tmp[0]*tmp[0]+tmp[1]*tmp[1]+tmp[2]*tmp[2];
-                solution = x;
-                dis = x[2];
+                auto tmp = F(x);
+                if (dcmp(x[0])>=0 && dcmp(x[0]-1)<=0 && x[2]>1e-2 && x[2]<dis && dcmp(tmp[0]*tmp[0]+tmp[1]*tmp[1]+tmp[2]*tmp[2])<=0)
+                {
+                    R2 = tmp[0]*tmp[0]+tmp[1]*tmp[1]+tmp[2]*tmp[2];
+                    solution = x;
+                    dis = x[2];
+                }
+                x = x-Ft(x).inverse()*tmp;
             }
-            x = x-Ft(x).inverse()*tmp;
         }
-    }
 
     // cout << "R2 : " << R2 << endl;
+    // cout << "here : " << R2 << endl;
     if (dcmp(R2) > 0) return NoCollide;
-    Point p = P(solution[0]);
+    Point p = P(solution[0], solution[1]);
     Vector pt = Pt(solution[0]);
 
     Vector n(pt.z*cos(solution[1]), pt.z*sin(solution[1]), -pt.x);
-    Point target(p.x*cos(solution[1]), p.x*sin(solution[1]), p.z);
-    double t = Length(target-ray.s);
-    return (CollideInfo){t, target, Normalize(n), ray.d};
+    double t = Length(p-ray.s);
+    return (CollideInfo){t, p, Normalize(n), ray.d};
 }
