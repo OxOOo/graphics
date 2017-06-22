@@ -26,8 +26,8 @@ int main()
     // return 0;
 
     Scene scene;
-    scene.setCamera(Camera::ptr(new PerspectiveCamera(Point(0, -2, 0), Vector(0, 1, 0), Vector(0, 0, 1), 60, 500, false)));
-    scene.putLight(Light::ptr(new RectLight(Point(0, 0.2, 1), Vector(-0.2, 0, 0), Vector(0, 0.2, 0))))->color = RGB::white();
+    scene.setCamera(Camera::ptr(new PerspectiveCamera(Point(0, -2, 0), Vector(0, 1, 0), Vector(0, 0, 1), 60, 500, 3)));
+    scene.putLight(Light::ptr(new RectLight(Point(0, 0.6, 1), Vector(-0.2, 0, 0), Vector(0, 0.2, 0))))->color = RGB::white();
     
     auto floor_m = scene.putObject(Object::ptr(new PlaneObject(Vector(0, 0, 1), 1, 10)))->material = Material::ptr(new PlainMaterial(RGB::white()));
     floor_m->reflect_factor = 0;
@@ -46,7 +46,7 @@ int main()
     left_m->high_light = 0.7;
     left_m->absorb_color = RGB::white();
 
-    auto right_m = scene.putObject(Object::ptr(new PlaneObject(Vector(-1, 0, 0), 1, 10)))->material = Material::ptr(new PlainMaterial(RGB::white()));
+    auto right_m = scene.putObject(Object::ptr(new PlaneObject(Vector(-1, 0, 0), 1, 10)))->material = Material::ptr(new PlainMaterial(RGB("9ACD32")));
     right_m->reflect_factor = 0.1;
     right_m->refract_factor = 0;
     right_m->diffuse_factor = 1;
@@ -62,10 +62,10 @@ int main()
     top_m->high_light = 0.3;
     top_m->absorb_color = RGB::white();
 
-    auto front_m = scene.putObject(Object::ptr(new PlaneObject(Vector(0, -1, 0), 2, 10)))->material = Material::ptr(new PlainMaterial(RGB::white()));
+    auto front_m = scene.putObject(Object::ptr(new PlaneObject(Vector(0, -1, 0), 2, 10)))->material = Material::ptr(new PlainMaterial(RGB::red()));
     front_m->reflect_factor = 0;
     front_m->refract_factor = 0;
-    front_m->diffuse_factor = 1;
+    front_m->diffuse_factor = 0.6;
     front_m->refract_n = 1.5;
     front_m->high_light = 0.3;
     front_m->absorb_color = RGB::white();
@@ -78,19 +78,19 @@ int main()
     sphere1_m->high_light = 0.4;
     sphere1_m->absorb_color = RGB(0, 0, 0);
 
-    auto sphere2_m =scene.putObject(Object::ptr(new SphereObject(Point(0.65, 0, -0.5), 0.2)))->material = Material::ptr(new PlainMaterial(RGB::red()));
-    sphere2_m->reflect_factor = 0.1;
+    auto sphere2_m =scene.putObject(Object::ptr(new SphereObject(Point(0.65, 0.4, -0.7), 0.25)))->material = Material::ptr(new PlainMaterial(RGB::red()));
+    sphere2_m->reflect_factor = 0.0; // 0.1
     sphere2_m->refract_factor = 1;
     sphere2_m->diffuse_factor = 0;
     sphere2_m->refract_n = 1.5;
     sphere2_m->high_light = 0.6;
-    sphere2_m->absorb_color = RGB(0, 0, 0);
+    sphere2_m->absorb_color = RGB(0.8, 0.2, 0);
 
     auto sphere3_m =scene.putObject(Object::ptr(new SphereObject(Point(-0.4, 0, -0.8), 0.2)))->material = Material::ptr(new PlainMaterial(RGB::red()));
-    sphere3_m->reflect_factor = 0.3;
+    sphere3_m->reflect_factor = 0.0; // 0.3
     sphere3_m->refract_factor = 1;
     sphere3_m->diffuse_factor = 0;
-    sphere3_m->refract_n = 1.5;
+    sphere3_m->refract_n = 1.4;
     sphere3_m->high_light = 0.3;
     sphere3_m->absorb_color = RGB(0, 0, 0);
     

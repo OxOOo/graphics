@@ -12,7 +12,6 @@ struct HitPoint
     RGB weight;
     int rc;
     Vector boxMin, boxMax;
-    int deltaNum;
     Material::ptr material;
     RGB color; // 颜色统计，考虑BRDF，不考虑材质
 };

@@ -85,7 +85,7 @@ Vector GetRandomVector(const Vector& N)
     assert(dcmp(Length2(N)-1) == 0);
     assert(dcmp(Length2(dx)-1) == 0);
     assert(dcmp(Length2(dy)-1) == 0);
-    return dx*sin(theta)*cos(phi)+dy*sin(theta)*sin(phi)+N*cos(theta);
+    return dx*cos(theta)*cos(phi)+dy*cos(theta)*sin(phi)+N*sin(theta);
 }
 Vector AssRandomVector()
 {

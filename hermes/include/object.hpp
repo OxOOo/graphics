@@ -4,13 +4,15 @@
 #include "const.hpp"
 #include "geometry.hpp"
 #include "material.hpp"
+#include <Eigen/Core>
 
 // 物品基类
 class Object
 {
 public:
     Material::ptr material;
-    Object() {}
+    unsigned long long sample;
+    Object() {sample = rand()%731;}
     virtual ~Object() {}
     typedef shared_ptr<Object> ptr;
 
@@ -80,6 +82,14 @@ public:
     virtual RGB getTexture(const CollideInfo& cinfo) const {
         return RGB::white(); // FIXME
     }
+};
+
+// Bezier
+class BezierObject: public Object
+{
+private:
+public:
+    BezierObject() {}
 };
 
 #endif // OBJECT_H

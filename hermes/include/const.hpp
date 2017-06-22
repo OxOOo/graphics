@@ -16,6 +16,7 @@
 using namespace std;
 
 const int THREADS_COUNT = 2;
+const unsigned long long HASH_MUL = 14552;
 
 struct CollideInfo
 {

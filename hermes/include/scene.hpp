@@ -25,7 +25,7 @@ public:
     RGB rayTracing(const Ray& ray, const RGB& weight, Object::ptr inner_obj, int remaindeep) const; // 光线追踪
     cv::Mat renderRayTracing();
 
-    RGB PPMTracing(int rc, const Ray& ray, const RGB& weight, Object::ptr inner_obj, int remaindeep);
+    RGB PPMTracing(int rc, const Ray& ray, const RGB& weight, Object::ptr inner_obj, int remaindeep, unsigned long long* hash);
     void PhotonTracing(Photon pho, Object::ptr inner_obj, int remaindeep);
     cv::Mat PPMRender();
 
@@ -34,8 +34,9 @@ private:
 
     const int maxdeep = 6;
     const int shade_quality = 1;
-    const double R = 0.02;
-    HitMap::ptr hitmap = HitMap::ptr(new HitMap(200*10000));
+    const double origin_R = 0.007, alpha = 0.7;
+    double R;
+    HitMap::ptr hitmap = HitMap::ptr(new HitMap(5000*10000));
 
     vector<Object::ptr> objs;
     vector<Light::ptr> lights;

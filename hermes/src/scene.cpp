@@ -194,7 +194,7 @@ cv::Mat Scene::renderRayTracing()
     return img;
 }
 
-RGB Scene::PPMTracing(int rc, const Ray& ray, const RGB& weight, Object::ptr inner_obj, int remaindeep)
+RGB Scene::PPMTracing(int rc, const Ray& ray, const RGB& weight, Object::ptr inner_obj, int remaindeep, unsigned long long* hash)
 {
     if (remaindeep <= 0) return background;
     if (dcmp(weight.r)<=0 && dcmp(weight.g)<=0 && dcmp(weight.b)<=0)
@@ -235,7 +235,8 @@ RGB Scene::PPMTracing(int rc, const Ray& ray, const RGB& weight, Object::ptr inn
     RGB ret_color = background;
 
     if (minlight) {
-        ret_color = ret_color + weight.modulate(minlight->color);
+        ret_color = ret_color + weight.modulate(minlight->color)*2;
+        if (hash) *hash = *hash * HASH_MUL + minlight->sample;
     }
 
     if (minobj)
@@ -268,12 +269,13 @@ RGB Scene::PPMTracing(int rc, const Ray& ray, const RGB& weight, Object::ptr inn
         }
 
         // 放入hitmap
-        if (inner_obj) {
+        if (hash) *hash = *hash * HASH_MUL + minobj->sample;
+        else if (inner_obj) {
             double dist = mincinfo.t;
             hitmap->insertPoint(mincinfo, rc, minobj->material->absorb_color.absorb(dist).modulate(weight), minobj->material);
         } else if (minobj->material->hasTexture()) {
-            hitmap->insertPoint(mincinfo, rc, weight.modulate(minobj->getTexture(mincinfo)), minobj->material);
-        } else hitmap->insertPoint(mincinfo, rc, weight, minobj->material);
+            hitmap->insertPoint(mincinfo, rc, weight.modulate(minobj->getTexture(mincinfo)).modulate(minobj->material->plaincolor(mincinfo)), minobj->material);
+        } else hitmap->insertPoint(mincinfo, rc, weight.modulate(minobj->material->plaincolor(mincinfo)), minobj->material);
 
         double reflect_factor = minobj->material->reflect_factor; // 当没有折射的时候发生全反射
 
@@ -282,12 +284,12 @@ RGB Scene::PPMTracing(int rc, const Ray& ray, const RGB& weight, Object::ptr inn
         double refract_n = inner_obj ? 1.0/minobj->material->refract_n : minobj->material->refract_n;
         Vector refract_v;
         if (Refract(ray.d, mincinfo.n, refract_n, refract_v)) {
-            refract_color = PPMTracing(rc, Ray(mincinfo.p, refract_v), weight*minobj->material->refract_factor, inner_obj ? NULL : minobj, remaindeep-1);
+            refract_color = PPMTracing(rc, Ray(mincinfo.p, refract_v), weight*minobj->material->refract_factor, inner_obj ? NULL : minobj, remaindeep-1, hash);
         } else reflect_factor += minobj->material->refract_factor;
 
         // 反射
         Vector r = Reflect(ray.d, mincinfo.n);
-        RGB reflect_color = PPMTracing(rc, Ray(mincinfo.p, r), weight*reflect_factor, inner_obj, remaindeep-1);
+        RGB reflect_color = PPMTracing(rc, Ray(mincinfo.p, r), weight*reflect_factor, inner_obj, remaindeep-1, hash);
 
         if (inner_obj) {
             double dist = mincinfo.t;
@@ -336,11 +338,10 @@ void Scene::PhotonTracing(Photon pho, Object::ptr inner_obj, int remaindeep)
 
     hitmap->insertPhoton(pho, mincinfo, R);
 
-    RGB new_power = pho.power*minobj->material->diffuse_factor;
-    if (minobj->material->hasTexture()) new_power = new_power.modulate(minobj->getTexture(mincinfo));
-
     // 漫反射
-    PhotonTracing((Photon){new_power, Ray(mincinfo.p, GetRandomVector(mincinfo.n))}, inner_obj, remaindeep-1);
+    RGB diffuse_power = minobj->material->plaincolor(mincinfo).modulate(pho.power)*minobj->material->diffuse_factor;
+    if (minobj->material->hasTexture()) diffuse_power = diffuse_power.modulate(minobj->getTexture(mincinfo));
+    PhotonTracing((Photon){diffuse_power, Ray(mincinfo.p, GetRandomVector(mincinfo.n))}, inner_obj, remaindeep-1);
 
     double reflect_factor = minobj->material->reflect_factor; // 当没有折射的时候发生全反射
 
@@ -353,9 +354,11 @@ void Scene::PhotonTracing(Photon pho, Object::ptr inner_obj, int remaindeep)
     } else reflect_factor += minobj->material->refract_factor;
 
     // 反射
+    RGB reflect_power = minobj->material->plaincolor(mincinfo).modulate(pho.power)*reflect_factor;
+    if (minobj->material->hasTexture()) reflect_power = reflect_power.modulate(minobj->getTexture(mincinfo));
     Vector r = Reflect(pho.movement.d, mincinfo.n);
     assert(dcmp(Length2(r)-1) == 0);
-    PhotonTracing((Photon){pho.power*reflect_factor, Ray(mincinfo.p, r)}, inner_obj, remaindeep-1);
+    PhotonTracing((Photon){reflect_power, Ray(mincinfo.p, r)}, inner_obj, remaindeep-1);
 }
 
 cv::Mat Scene::PPMRender()
@@ -366,21 +369,49 @@ cv::Mat Scene::PPMRender()
     cv::Mat img(H, W, CV_8UC3);
     setTimePoint("PPMRender");
 
+    unsigned long long *hash = new unsigned long long[H*W];
     for(int i = 0; i < H; i ++)
     {
         for(int j = 0; j < W; j ++)
         {
-            RGB c = RGB::zero();
             vector<Ray> rays = camera->generateRay(i, j);
+            hash[i*W+j] = 0;
             for(auto& ray: rays)
-                c = c + PPMTracing(i*W+j, ray, RGB::one()/rays.size(), NULL, maxdeep);
+                PPMTracing(i*W+j, ray, RGB::one()/rays.size(), NULL, maxdeep, &hash[i*W+j]);
+        }
+        cout << "hasing : " << i << " / " << H << endl;
+    }
+    cv::namedWindow("Image", cv::WINDOW_NORMAL);
+    RGB *origin_rgbs = new RGB[H*W];
+    for(int i = 0; i < H; i ++)
+    {
+        for(int j = 0; j < W; j ++)
+        {
+            bool smooth = false;
+            smooth |= i > 0 && hash[i*W+j] != hash[(i-1)*W+j];
+            smooth |= j > 0 && hash[i*W+j] != hash[i*W+j-1];
+            smooth |= i < H-1 && hash[i*W+j] != hash[(i+1)*W+j];
+            smooth |= j < W-1 && hash[i*W+j] != hash[i*W+j+1];
+
+            vector<Ray> rays;
+            if (smooth) rays = camera->generateSmoothRay(i, j);
+            else rays = camera->generateRay(i, j);
+
+            RGB c = RGB::zero();
+            for(auto& ray: rays)
+                c = c + PPMTracing(i*W+j, ray, RGB::one()/rays.size(), NULL, maxdeep, NULL);
+            origin_rgbs[i*W+j] = c;
             c.min();
             img.at<cv::Vec3b>(i, j) = cv::Vec3b(255*c.b, 255*c.g, 255*c.r);
         }
 
-        imshow("Image", img);
+        cout << "sampling : " << i << " / " << H << endl;
+        cv::imshow("Image", img);
         cv::waitKey(1);
     }
+    delete[] hash;
+    cv::imwrite("noPPM.png", img);
+    cv::destroyAllWindows();
 
     logTimePoint("PPMRender");
 
@@ -390,53 +421,60 @@ cv::Mat Scene::PPMRender()
     logTimePoint("buildHitmap");
 
     setTimePoint("Photon");
-    for(int times = 0; times <= 100*10000; times ++)
+    R = origin_R;
+    for(int iter = 0, total_times = 0; iter < 30; iter ++)
     {
-        for(auto light: lights)
+        cout << "iter : " << iter << " R : " << R << endl;
+        for(int times = 0; times <= 50*10000; times ++, total_times ++)
         {
-            Photon pho = light->genPhoton(times);
-            PhotonTracing(pho, NULL, maxdeep);
-        }
-        if (times % 1000 == 0) cout << "Photon " << times << endl;
-
-        if (times && times % 50000 == 0) {
-            RGB *rgbs = new RGB[H*W];
-            HitPoint* points = hitmap->getHitPoints();
-            int stored_points = hitmap->getStoredPoints();
-            for(int i = 0; i < stored_points; i ++)
+            for(auto light: lights)
             {
-                int rc = points[i].rc;
-                rgbs[rc] = rgbs[rc] + points[i].color.modulate(points[i].weight);
+                Photon pho = light->genPhoton(times);
+                PhotonTracing(pho, NULL, maxdeep);
             }
-            cv::Mat photon_img(H, W, CV_8UC3, cv::Scalar(0, 0, 0));
-            for(int i = 0; i < H; i ++)
-                for(int j = 0; j < W; j ++)
-                {
-                    int rc = i*W+j;
-                    rgbs[rc] = rgbs[rc]/times;
-                    rgbs[rc].min();
-                    photon_img.at<cv::Vec3b>(i, j) = cv::Vec3b(255*rgbs[rc].b, 255*rgbs[rc].g, 255*rgbs[rc].r);
-                }
-            delete[] rgbs;
-            char buf[100];
-            sprintf(buf, "%dphoton.png", times);
-            cv::imwrite(buf, photon_img);
-
-            cv::Mat merge_img(H, W, CV_8UC3, cv::Scalar(0, 0, 0));
-            for(int i = 0; i < H; i ++)
-                for(int j = 0; j < W; j ++)
-                {
-                    RGB rgb = RGB(photon_img.at<cv::Vec3b>(i, j)) + RGB(img.at<cv::Vec3b>(i, j));
-                    rgb.min();
-                    merge_img.at<cv::Vec3b>(i, j) = cv::Vec3b(255*rgb.b, 255*rgb.g, 255*rgb.r);
-                }
-            sprintf(buf, "%dmerge.png", times);
-            cv::imwrite(buf, merge_img);
+            if (times % 2000 == 0) cout << "Photon " << times << " " << iter << endl;
         }
+
+        RGB *ppm_rgbs = new RGB[H*W];
+        HitPoint* points = hitmap->getHitPoints();
+        int stored_points = hitmap->getStoredPoints();
+        for(int i = 0; i < stored_points; i ++)
+        {
+            int rc = points[i].rc;
+            ppm_rgbs[rc] = ppm_rgbs[rc] + points[i].color.modulate(points[i].weight);
+        }
+        cv::Mat photon_img(H, W, CV_8UC3, cv::Scalar(0, 0, 0));
+        for(int i = 0; i < H; i ++)
+            for(int j = 0; j < W; j ++)
+            {
+                int rc = i*W+j;
+                ppm_rgbs[rc] = ppm_rgbs[rc]/total_times/R/R/1.5;
+                RGB rgb = ppm_rgbs[rc];
+                rgb.min();
+                photon_img.at<cv::Vec3b>(i, j) = cv::Vec3b(255*rgb.b, 255*rgb.g, 255*rgb.r);
+            }
+        char buf[100];
+        sprintf(buf, "%dphoton.png", iter);
+        cv::imwrite(buf, photon_img);
+
+        cv::Mat merge_img(H, W, CV_8UC3, cv::Scalar(0, 0, 0));
+        for(int i = 0; i < H; i ++)
+            for(int j = 0; j < W; j ++)
+            {
+                RGB rgb = ppm_rgbs[i*W+j] + origin_rgbs[i*W+j];
+                rgb.min();
+                merge_img.at<cv::Vec3b>(i, j) = cv::Vec3b(255*rgb.b, 255*rgb.g, 255*rgb.r);
+            }
+        sprintf(buf, "%dmerge.png", iter);
+        cv::imwrite(buf, merge_img);
+
+        delete[] ppm_rgbs;
+
+        // R = R*sqrt((iter+alpha)/(iter+1));
     }
     logTimePoint("Photon");
 
-    imshow("Image", img);
-    cv::waitKey(0);
+    delete[] origin_rgbs;
+
     return img;
 }

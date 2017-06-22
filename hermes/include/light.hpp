@@ -10,7 +10,8 @@ class Light
 {
 public:
     RGB color;
-    Light() {}
+    unsigned long long sample;
+    Light() {sample = rand()%731;}
     virtual ~Light() {}
     typedef shared_ptr<Light> ptr;
 

@@ -22,7 +22,6 @@ void HitMap::insertPoint(const CollideInfo& cinfo, int rc, RGB weight, Material:
     hitpoints[stored_points].weight = weight;
     hitpoints[stored_points].rc = rc;
     hitpoints[stored_points].color = RGB::zero();
-    hitpoints[stored_points].deltaNum = 0;
     hitpoints[stored_points].material = material;
     stored_points ++;
 }
@@ -85,6 +84,5 @@ void HitMap::update(int s, int t, const Photon& pho, const CollideInfo& cinfo, d
 
 void HitMap::updateHitPoint(HitPoint& point, const Photon& pho, const CollideInfo& cinfo)
 {
-    point.deltaNum ++;
     point.color = point.color + pho.power * point.material->BRDF(pho.movement.d, cinfo.n, -cinfo.rayd);
 }

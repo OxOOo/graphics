@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.5.0)
 
 find_package(OpenCV REQUIRED)
 
+include_directories(../eigen)
 include_directories(include)
 include_directories(../plog/include)
 
