@@ -32,11 +32,11 @@ public:
 private:
     int objIndex(Object::ptr obj) const;
 
-    const int maxdeep = 1;
+    const int maxdeep = 6;
     const int shade_quality = 1;
     const double origin_R = 0.007, alpha = 0.7;
     double R;
-    HitMap::ptr hitmap = HitMap::ptr(new HitMap(500*10000));
+    HitMap::ptr hitmap = HitMap::ptr(new HitMap(5000*10000));
 
     vector<Object::ptr> objs;
     vector<Light::ptr> lights;

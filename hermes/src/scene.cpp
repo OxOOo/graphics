@@ -254,7 +254,6 @@ RGB Scene::PPMTracing(int rc, const Ray& ray, const RGB& weight, Object::ptr inn
                     CollideInfo coll = obj->collide(Ray(mincinfo.p, -linfo.light.d));
                     if (dcmp(coll.t) > 0 && dcmp(coll.t*coll.t-Length2(linfo.light.s-mincinfo.p)) < 0)
                     {
-                        cout << "not reachable : " << rc/200 << " " << rc%200 << " " << coll.t << endl;
                         reachable = false;
                         break;
                     }
@@ -380,7 +379,7 @@ cv::Mat Scene::PPMRender()
             for(auto& ray: rays)
                 PPMTracing(i*W+j, ray, RGB::one()/rays.size(), NULL, maxdeep, &hash[i*W+j]);
         }
-        cout << "hasing : " << i << " / " << H << endl;
+        cout << "hashing : " << i << " / " << H << endl;
     }
     cv::namedWindow("Image", cv::WINDOW_NORMAL);
     RGB *origin_rgbs = new RGB[H*W];
@@ -388,8 +387,6 @@ cv::Mat Scene::PPMRender()
     {
         for(int j = 0; j < W; j ++)
         {
-            cout << i << " " << j << endl;
-
             bool smooth = false;
             smooth |= i > 0 && hash[i*W+j] != hash[(i-1)*W+j];
             smooth |= j > 0 && hash[i*W+j] != hash[i*W+j-1];
@@ -397,9 +394,8 @@ cv::Mat Scene::PPMRender()
             smooth |= j < W-1 && hash[i*W+j] != hash[i*W+j+1];
 
             vector<Ray> rays;
-            // if (smooth) rays = camera->generateSmoothRay(i, j);
-            // else rays = camera->generateRay(i, j);
-            rays = camera->generateRay(i, j);
+            if (smooth) rays = camera->generateSmoothRay(i, j);
+            else rays = camera->generateRay(i, j);
 
             RGB c = RGB::zero();
             for(auto& ray: rays)
