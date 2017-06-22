@@ -4,7 +4,7 @@
 #include "const.hpp"
 #include "geometry.hpp"
 #include "material.hpp"
-#include <Eigen/Core>
+#include "bezier.hpp"
 
 // 物品基类
 class Object
@@ -88,8 +88,21 @@ public:
 class BezierObject: public Object
 {
 private:
+    Vector offset; // offset 对应 bezier的(0, 0, 0)
+    Bezier::ptr bezier;
 public:
-    BezierObject() {}
+    BezierObject(const Vector& offset, Bezier::ptr bezier): offset(offset), bezier(bezier) {}
+    virtual CollideInfo collide(const Ray& ray) const {
+        CollideInfo cinfo = bezier->collide(Ray(ray.s-offset, ray.d));
+        if (cinfo.t > 0) cinfo.p = cinfo.p+offset;
+        return cinfo;
+    }
+    virtual CollideInfo innerCollide(const Ray& ray) const { // FIXME
+        return NoCollide;
+    }
+    virtual RGB getTexture(const CollideInfo& cinfo) const {
+        return RGB::white(); // FIXME
+    }
 };
 
 #endif // OBJECT_H

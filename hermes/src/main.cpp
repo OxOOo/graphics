@@ -10,6 +10,7 @@
 #include "object.hpp"
 #include "light.hpp"
 #include "material.hpp"
+#include "bezier.hpp"
 
 using namespace std;
 
@@ -22,7 +23,19 @@ int main()
     cout << "Hello World" << endl;
     // srand(time(0));
 
-    // test();
+    // Bezier B;
+    // B.append(Point(0, 0, 0));
+    // B.append(Point(1, 0, 0));
+    // B.append(Point(0, 0, 1));
+    // cv::Mat tmp = B.draw();
+    // cv::imwrite("temp.png", tmp);
+
+    // auto cinfo = B.collide(Ray(Point(0, -2, 0.5), Vector(0, 1, 0)));
+    // cout << "cinfo : " << cinfo.t << endl;
+    // cinfo = B.collide(Ray(Point(0, -2, -0.5), Vector(0, 1, 0)));
+    // cout << "cinfo : " << cinfo.t << endl;
+    // cinfo = B.collide(Ray(Point(0, -2, 1.5), Vector(0, 1, 0)));
+    // cout << "cinfo : " << cinfo.t << endl;
     // return 0;
 
     Scene scene;
@@ -70,29 +83,41 @@ int main()
     front_m->high_light = 0.3;
     front_m->absorb_color = RGB::white();
 
-    auto sphere1_m = scene.putObject(Object::ptr(new SphereObject(Point(-0.7, 1, 0), 0.3)))->material = Material::ptr(new PlainMaterial(RGB::red()));
-    sphere1_m->reflect_factor = 1;
-    sphere1_m->refract_factor = 0;
-    sphere1_m->diffuse_factor = 0;
-    sphere1_m->refract_n = 1.5;
-    sphere1_m->high_light = 0.4;
-    sphere1_m->absorb_color = RGB(0, 0, 0);
+    // auto sphere1_m = scene.putObject(Object::ptr(new SphereObject(Point(-0.7, 1, 0), 0.3)))->material = Material::ptr(new PlainMaterial(RGB::red()));
+    // sphere1_m->reflect_factor = 1;
+    // sphere1_m->refract_factor = 0;
+    // sphere1_m->diffuse_factor = 0;
+    // sphere1_m->refract_n = 1.5;
+    // sphere1_m->high_light = 0.4;
+    // sphere1_m->absorb_color = RGB(0, 0, 0);
 
-    auto sphere2_m =scene.putObject(Object::ptr(new SphereObject(Point(0.65, 0.4, -0.7), 0.25)))->material = Material::ptr(new PlainMaterial(RGB::red()));
-    sphere2_m->reflect_factor = 0.0; // 0.1
-    sphere2_m->refract_factor = 1;
-    sphere2_m->diffuse_factor = 0;
-    sphere2_m->refract_n = 1.5;
-    sphere2_m->high_light = 0.6;
-    sphere2_m->absorb_color = RGB(0.8, 0.2, 0);
+    // auto sphere2_m = scene.putObject(Object::ptr(new SphereObject(Point(0.65, 0.4, -0.7), 0.25)))->material = Material::ptr(new PlainMaterial(RGB::red()));
+    // sphere2_m->reflect_factor = 0.0; // 0.1
+    // sphere2_m->refract_factor = 1;
+    // sphere2_m->diffuse_factor = 0;
+    // sphere2_m->refract_n = 1.5;
+    // sphere2_m->high_light = 0.6;
+    // sphere2_m->absorb_color = RGB(0.8, 0.2, 0);
 
-    auto sphere3_m =scene.putObject(Object::ptr(new SphereObject(Point(-0.4, 0, -0.8), 0.2)))->material = Material::ptr(new PlainMaterial(RGB::red()));
-    sphere3_m->reflect_factor = 0.0; // 0.3
-    sphere3_m->refract_factor = 1;
-    sphere3_m->diffuse_factor = 0;
-    sphere3_m->refract_n = 1.4;
-    sphere3_m->high_light = 0.3;
-    sphere3_m->absorb_color = RGB(0, 0, 0);
+    // auto sphere3_m = scene.putObject(Object::ptr(new SphereObject(Point(-0.4, 0, -0.8), 0.2)))->material = Material::ptr(new PlainMaterial(RGB::red()));
+    // sphere3_m->reflect_factor = 0.0; // 0.3
+    // sphere3_m->refract_factor = 1;
+    // sphere3_m->diffuse_factor = 0;
+    // sphere3_m->refract_n = 1.4;
+    // sphere3_m->high_light = 0.3;
+    // sphere3_m->absorb_color = RGB(0, 0, 0);
+
+    auto bezier = Bezier::ptr(new Bezier());
+    bezier->append(Point(0, 0, 0));
+    bezier->append(Point(1, 0, 0));
+    bezier->append(Point(0, 0, 1));
+    auto bezier_m = scene.putObject(Object::ptr(new BezierObject(Vector(0, 0, -1), bezier)))->material = Material::ptr(new PlainMaterial(RGB::green()));
+    bezier_m->reflect_factor = 0;
+    bezier_m->refract_factor = 0;
+    bezier_m->diffuse_factor = 0.9;
+    bezier_m->refract_n = 1.4;
+    bezier_m->high_light = 0.3;
+    bezier_m->absorb_color = RGB(0, 0, 0);
     
     cv::Mat img = scene.PPMRender(); // scene.renderRayTracing();
     cv::imwrite("temp.png", img);

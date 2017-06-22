@@ -32,7 +32,7 @@ public:
 private:
     int objIndex(Object::ptr obj) const;
 
-    const int maxdeep = 6;
+    const int maxdeep = 1;
     const int shade_quality = 1;
     const double origin_R = 0.007, alpha = 0.7;
     double R;
