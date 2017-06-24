@@ -48,4 +48,4 @@ SeamCarving图像缩放算法
 
 [images](images)
 
-[ftp](ftp://chenyupi.cn)
+[ftp://chenyupi.cn](ftp://chenyupi.cn)
