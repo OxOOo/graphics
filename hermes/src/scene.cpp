@@ -194,7 +194,7 @@ cv::Mat Scene::renderRayTracing()
     return img;
 }
 
-RGB Scene::PPMTracing(int rc, const Ray& ray, const RGB& weight, Object::ptr inner_obj, int remaindeep, unsigned long long* hash)
+RGB Scene::PPMTracing(int rc, const Ray& ray, RGB weight, Object::ptr inner_obj, int remaindeep, unsigned long long* hash)
 {
     if (remaindeep <= 0) return background;
     if (dcmp(weight.r)<=0 && dcmp(weight.g)<=0 && dcmp(weight.b)<=0)
@@ -235,7 +235,7 @@ RGB Scene::PPMTracing(int rc, const Ray& ray, const RGB& weight, Object::ptr inn
     RGB ret_color = background;
 
     if (minlight) {
-        ret_color = ret_color + weight.modulate(minlight->color)*2;
+        ret_color = ret_color + weight.modulate(minlight->color);
         if (hash) *hash = *hash * HASH_MUL + minlight->sample;
     }
 
@@ -316,6 +316,7 @@ void Scene::PhotonTracing(Photon pho, Object::ptr inner_obj, int remaindeep)
     {
         minobj = inner_obj;
         mincinfo = inner_obj->innerCollide(pho.movement);
+        if (dcmp(mincinfo.t)<=0) return;
     } else {
         for(auto obj: objs)
         {
@@ -370,28 +371,35 @@ cv::Mat Scene::PPMRender()
     setTimePoint("PPMRender");
 
     unsigned long long *hash = new unsigned long long[H*W];
-    for(int i = 0; i < H; i ++)
+    if (camera->needSmooth())
     {
-        for(int j = 0; j < W; j ++)
+        for(int i = 0; i < H; i ++)
         {
-            vector<Ray> rays = camera->generateRay(i, j);
-            hash[i*W+j] = 0;
-            for(auto& ray: rays)
-                PPMTracing(i*W+j, ray, RGB::one()/rays.size(), NULL, maxdeep, &hash[i*W+j]);
+            cout << "hashing : " << i << " / " << H << endl;
+            for(int j = 0; j < W; j ++)
+            {
+                vector<Ray> rays = camera->generateRay(i, j);
+                hash[i*W+j] = 0;
+                for(auto& ray: rays)
+                    PPMTracing(i*W+j, ray, RGB::one()/rays.size(), NULL, maxdeep, &hash[i*W+j]);
+            }
         }
-        cout << "hashing : " << i << " / " << H << endl;
     }
     cv::namedWindow("Image", cv::WINDOW_NORMAL);
     RGB *origin_rgbs = new RGB[H*W];
     for(int i = 0; i < H; i ++)
     {
+        cout << "sampling : " << i << " / " << H << endl;
         for(int j = 0; j < W; j ++)
         {
             bool smooth = false;
-            smooth |= i > 0 && hash[i*W+j] != hash[(i-1)*W+j];
-            smooth |= j > 0 && hash[i*W+j] != hash[i*W+j-1];
-            smooth |= i < H-1 && hash[i*W+j] != hash[(i+1)*W+j];
-            smooth |= j < W-1 && hash[i*W+j] != hash[i*W+j+1];
+            if (camera->needSmooth())
+            {
+                smooth |= i > 0 && hash[i*W+j] != hash[(i-1)*W+j];
+                smooth |= j > 0 && hash[i*W+j] != hash[i*W+j-1];
+                smooth |= i < H-1 && hash[i*W+j] != hash[(i+1)*W+j];
+                smooth |= j < W-1 && hash[i*W+j] != hash[i*W+j+1];
+            }
 
             vector<Ray> rays;
             if (smooth) rays = camera->generateSmoothRay(i, j);
@@ -405,14 +413,12 @@ cv::Mat Scene::PPMRender()
             img.at<cv::Vec3b>(i, j) = cv::Vec3b(255*c.b, 255*c.g, 255*c.r);
         }
 
-        cout << "sampling : " << i << " / " << H << endl;
         cv::imshow("Image", img);
         cv::waitKey(1);
     }
     delete[] hash;
     cv::imwrite("noPPM.png", img);
     cv::destroyAllWindows();
-    return img;
 
     logTimePoint("PPMRender");
 
@@ -449,7 +455,7 @@ cv::Mat Scene::PPMRender()
             for(int j = 0; j < W; j ++)
             {
                 int rc = i*W+j;
-                ppm_rgbs[rc] = ppm_rgbs[rc]/total_times/R/R/1.5;
+                ppm_rgbs[rc] = ppm_rgbs[rc]/total_times/R/R;
                 RGB rgb = ppm_rgbs[rc];
                 rgb.min();
                 photon_img.at<cv::Vec3b>(i, j) = cv::Vec3b(255*rgb.b, 255*rgb.g, 255*rgb.r);

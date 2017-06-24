@@ -9,5 +9,5 @@ include_directories(../plog/include)
 
 file(GLOB CXX_SOURCES src/*.cpp)
 add_executable(hermes ${CXX_SOURCES})
-target_compile_options(hermes PUBLIC -std=c++11 -Wall -O3)
+target_compile_options(hermes PUBLIC -std=c++11 -Wall -O3 -g)
 target_link_libraries(hermes ${OpenCV_LIBS} pthread)

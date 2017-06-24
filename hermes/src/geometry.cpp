@@ -80,7 +80,8 @@ Vector GetRandomVector(const Vector& N)
 {
     Vector dx = GetVerticalVector(N);
     Vector dy = Cross(N, dx);
-    double theta = RAND()*PI/2;
+    double t = RAND();
+    double theta = t*PI/2;
     double phi = RAND()*PI*2;
     assert(dcmp(Length2(N)-1) == 0);
     assert(dcmp(Length2(dx)-1) == 0);

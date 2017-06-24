@@ -10,14 +10,12 @@ public:
     typedef shared_ptr<Bezier> ptr;
 
     void append(const Point& p);
-    void maintain(double scale = 1);
+    void maintain();
     Point P(double t) const; // 点坐标
     Point P(double t, double theta) const;
     Vector Pt(double t) const; // 斜率
-    Vector N(double t, double theta) const;
     cv::Mat draw(int size = 200) const;
-    CollideInfo collide(const Ray& ray, bool rayin) const;
-    Point center() const;
+    CollideInfo collide(const Ray& ray) const;
 private:
     vector<Point> points;
     Point box_center;

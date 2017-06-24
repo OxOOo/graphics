@@ -44,10 +44,11 @@ public:
 
     double BRDF(const Vector& ray_in, const Vector& n, const Vector& ray_out)
     {
-        double ret = 0;
-        ret += max(diffuse_factor * Dot(-ray_in, n), 0.0);
-        ret += high_light * pow(max(Dot(-ray_in, Reflect(ray_out, n)), 0.0), 20);
-        return ret;
+        // double ret = 0;
+        // ret += max(diffuse_factor * Dot(-ray_in, n), 0.0);
+        // ret += high_light * pow(max(Dot(-ray_in, Reflect(ray_out, n)), 0.0), 20);
+        // return ret;
+        return max(diffuse_factor * Dot(-ray_in, n), 0.0);
     }
 
     bool hasTexture() const {

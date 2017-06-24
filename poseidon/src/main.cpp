@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <functional>
 #include <opencv2/opencv.hpp>
+#include <vector>
 
 using namespace std;
 using namespace cv;
@@ -225,9 +226,30 @@ Mat getRowDelta(const Mat& delta, const Mat& MASK)
     return dst_delta;
 }
 
-void SeamCarving(Mat src, Mat& dst, std::function<void(const Mat &src, Mat &E)> E_func, const int output_height, const int output_width)
+void maskSeams(Mat& seams, const Mat& originX, const Mat& originY, const Mat& MASK)
+{
+    for(int i = 0; i < MASK.rows; i ++)
+        for(int j = 0; j < MASK.cols; j ++)
+            if(MASK.at<int>(i, j) == 1)
+            {
+                seams.at<Vec3b>(originX.at<int>(i, j), originY.at<int>(i, j)) = Vec3b(0, 0, 255);
+            }
+}
+
+Mat SeamCarving(Mat src, Mat& dst, std::function<void(const Mat &src, Mat &E)> E_func, const int output_height, const int output_width)
 {
     Mat delta = Mat::zeros(src.rows, src.cols, CV_32S);
+    Mat seams; src.copyTo(seams);
+    Mat originX = Mat::zeros(src.rows, src.cols, CV_32S);
+    Mat originY = Mat::zeros(src.rows, src.cols, CV_32S);
+    bool needseams = src.cols >= output_width && src.rows >= output_height;
+
+    for(int i = 0; i < src.rows; i ++)
+        for(int j = 0; j < src.cols; j ++)
+        {
+            originX.at<int>(i, j) = i;
+            originY.at<int>(i, j) = j;
+        }
 
     while(src.cols != output_width || src.rows != output_height)
     {
@@ -235,27 +257,25 @@ void SeamCarving(Mat src, Mat& dst, std::function<void(const Mat &src, Mat &E)> 
         {
             Mat MASK = getColMask(src, delta, E_func);
 
-            // ===========debug===============
-            // Mat img(src.rows, src.cols, CV_8UC3);
-            // for(int i = 0; i < src.rows; i ++)
-            //     for(int j = 0; j < src.cols; j ++)
-            //     {
-            //         img.at<Vec3b>(i, j) = src.at<Vec3b>(i, j);
-            //         if (MASK.at<int>(i, j) == 1)
-            //         {
-            //             img.at<Vec3b>(i, j) = Vec3b(0, 0, 255);
-            //         }
-            //     }
-            // char buf[100];
-            // sprintf(buf, "../seam_images/debug-cols%d.png", src.cols);
-            // imwrite(buf, img);
-
             if (src.cols > output_width)
             {
                 src = deleteCol(src, MASK);
             } else {
                 src = insertCol(src, MASK);
                 delta = getColDelta(delta, MASK);
+            }
+
+            if (needseams)
+            {
+                maskSeams(seams, originX, originY, MASK);
+                for(int i = 0; i < src.rows; i ++)
+                    for(int j = 0, offset = 0; j < src.cols; j ++)
+                        if (MASK.at<int>(i, j) == 0)
+                        {
+                            originX.at<int>(i, offset) = originX.at<int>(i, j);
+                            originY.at<int>(i, offset) = originY.at<int>(i, j);
+                            offset ++;
+                        }
             }
         }
 
@@ -270,14 +290,39 @@ void SeamCarving(Mat src, Mat& dst, std::function<void(const Mat &src, Mat &E)> 
                 src = insertRow(src, MASK);
                 delta = getRowDelta(delta, MASK);
             }
+
+            if (needseams)
+            {
+                maskSeams(seams, originX, originY, MASK);
+                for(int j = 0; j < src.cols; j ++)
+                    for(int i = 0, offset = 0; i < src.rows; i ++)
+                        if (MASK.at<int>(i, j) == 0)
+                        {
+                            originX.at<int>(offset, j) = originX.at<int>(i, j);
+                            originY.at<int>(offset, j) = originY.at<int>(i, j);
+                            offset ++;
+                        }
+            }
         }
     }
 
     src.copyTo(dst);
+    return seams;
 }
 
-void RemoveItem(Mat src, Mat& dst, std::function<void(const Mat &src, Mat &E)> E_func, Vec3b flag)
+Mat RemoveItem(Mat src, Mat& dst, std::function<void(const Mat &src, Mat &E)> E_func, Vec3b flag)
 {
+    Mat seams; src.copyTo(seams);
+    Mat originX = Mat::zeros(src.rows, src.cols, CV_32S);
+    Mat originY = Mat::zeros(src.rows, src.cols, CV_32S);
+
+    for(int i = 0; i < src.rows; i ++)
+        for(int j = 0; j < src.cols; j ++)
+        {
+            originX.at<int>(i, j) = i;
+            originY.at<int>(i, j) = j;
+        }
+
     Mat removing = Mat::zeros(src.rows, src.cols, CV_32S);
     for(int i = 0; i < src.rows; i ++)
         for(int j = 0; j < src.cols; j ++)
@@ -308,20 +353,6 @@ void RemoveItem(Mat src, Mat& dst, std::function<void(const Mat &src, Mat &E)> E
         if (nums > 0)
         {
             Mat MASK = getColMask(src, delta, E_func);
-            // ===========debug===============
-            Mat img(src.rows, src.cols, CV_8UC3);
-            for(int i = 0; i < src.rows; i ++)
-                for(int j = 0; j < src.cols; j ++)
-                {
-                    img.at<Vec3b>(i, j) = src.at<Vec3b>(i, j);
-                    if (MASK.at<int>(i, j) == 1)
-                    {
-                        img.at<Vec3b>(i, j) = Vec3b(0, 0, 255);
-                    }
-                }
-            char buf[100];
-            sprintf(buf, "../seam_images/debug-cols%d.png", src.cols);
-            imwrite(buf, img);
 
             src = deleteCol(src, MASK);
             for(int i = 0; i < src.rows; i ++)
@@ -331,9 +362,21 @@ void RemoveItem(Mat src, Mat& dst, std::function<void(const Mat &src, Mat &E)> E
                         removing.at<int>(i, offset) = removing.at<int>(i, j);
                         offset ++;
                     }
+            
+            maskSeams(seams, originX, originY, MASK);
+            for(int i = 0; i < src.rows; i ++)
+                for(int j = 0, offset = 0; j < src.cols; j ++)
+                    if (MASK.at<int>(i, j) == 0)
+                    {
+                        originX.at<int>(i, offset) = originX.at<int>(i, j);
+                        originY.at<int>(i, offset) = originY.at<int>(i, j);
+                        offset ++;
+                    }
         } else break;
     }
     src.copyTo(dst);
+
+    return seams;
 }
 
 class EOperator
@@ -363,6 +406,33 @@ public:
     }
 };
 
+vector<string> algorithms;
+vector<std::function<void(const Mat&, Mat&)> > funcs;
+
+void testSeamCarving(string testname, string filename, double rows_scale, double cols_scale)
+{
+    cout << "testSeamCarving : " << testname << endl;
+
+    string path = "../seam_images/scale/tests/" + testname;
+    system(("mkdir -p \"" + path + "\"").c_str());
+    Mat src = imread("../seam_images/scale/" + filename);
+    imwrite(path + "/origin.png", src);
+
+    int output_height = round(src.rows*rows_scale);
+    int output_width = round(src.cols*cols_scale);
+
+    for(int i = 0; i < (int)algorithms.size(); i ++)
+    {
+        Mat dst;
+        Mat seams = SeamCarving(src, dst, funcs[i], output_height, output_width);
+        imwrite(path + "/" + algorithms[i] + ".png", dst);
+        if (output_height <= src.rows && output_width <= src.cols)
+        {
+            imwrite(path + "/" + algorithms[i] + "-seams.png", seams);
+        }
+    }
+}
+
 int main()
 {
     const Mat basic_kernel = (Mat_<int>(1, 3) << -1, 1, 0);
@@ -370,17 +440,19 @@ int main()
     const Mat laplacian_kernel = (Mat_<int>(3, 3) << 0, 1, 0, 1, -4, 1, 0, 1, 0);
     
     std::function<void(const Mat&, Mat&)> basic_func = EOperator(basic_kernel);
-    std::function<void(const Mat&, Mat&)> laplacian_func = [](const Mat &src, Mat &E) {
-        Mat gray_src;
-        cvtColor(src, gray_src, CV_BGR2GRAY);
-        Mat dst;
-        Laplacian(gray_src, dst, -1);
-        for(int i = 0; i < src.rows; i ++)
-            for(int j = 0; j < src.cols; j ++)
-            {
-                E.at<int>(i, j) = dst.at<uint8>(i, j);
-            }
-    };
+    std::function<void(const Mat&, Mat&)> sobel_func = EOperator(sobel_kernel);
+    // std::function<void(const Mat&, Mat&)> laplacian_func = [](const Mat &src, Mat &E) {
+    //     Mat gray_src;
+    //     cvtColor(src, gray_src, CV_BGR2GRAY);
+    //     Mat dst;
+    //     Laplacian(gray_src, dst, -1);
+    //     for(int i = 0; i < src.rows; i ++)
+    //         for(int j = 0; j < src.cols; j ++)
+    //         {
+    //             E.at<int>(i, j) = dst.at<uint8>(i, j);
+    //         }
+    // };
+    std::function<void(const Mat&, Mat&)> laplacian_func = EOperator(laplacian_kernel);
     std::function<void(const Mat&, Mat&)> gradient_func = [](const Mat &src, Mat &E) {
         Mat gray_src;
         cvtColor(src, gray_src, CV_BGR2GRAY);
@@ -405,16 +477,81 @@ int main()
             for(int j = 0; j < gray_src.cols; j ++)
                 E.at<int>(i, j) = min(E.at<int>(i, j), 255);
     };
+    std::function<void(const Mat&, Mat&)> roberts_func = [](const Mat& src, Mat& E) {
+        Mat gray_src;
+        cvtColor(src, gray_src, CV_BGR2GRAY);
+        Mat dx, dy;
+        Mat dx_kernel = (Mat_<int>(2, 2) << 1, 0, 0, -1);
+        Mat dy_kernel = (Mat_<int>(2, 2) << 0, 1, -1, 0);
+        filter2D(gray_src, dx, -1, dx_kernel);
+        filter2D(gray_src, dy, -1, dy_kernel);
+        for(int i = 0; i < gray_src.rows; i ++)
+            for(int j = 0; j < gray_src.cols; j ++)
+                E.at<int>(i, j) = min(255, (int)sqrt(double(dx.at<uint8>(i, j))*double(dx.at<uint8>(i, j))+double(dy.at<uint8>(i, j))*double(dy.at<uint8>(i, j))));
+    };
 
-    // Mat img = imread("../seam_images/4.jpg", CV_LOAD_IMAGE_COLOR);
-    // Mat dst;
-    // SeamCarving(img, dst, laplacian_func, img.rows+100, img.cols+100);
-    // imwrite("../seam_images/temp.png", dst);
+    algorithms.push_back("Basic"); funcs.push_back(basic_func);
+    algorithms.push_back("Sobel"); funcs.push_back(sobel_func);
+    algorithms.push_back("Laplacian"); funcs.push_back(laplacian_func);
+    algorithms.push_back("Roberts"); funcs.push_back(roberts_func);
 
-    Mat img = imread("../seam_images/remove/6(colored).png", CV_LOAD_IMAGE_COLOR);
-    Mat dst;
-    RemoveItem(img, dst, laplacian_func, Vec3b(0, 255, 0));
-    imwrite("../seam_images/remove/6(removed).png", dst);
+    // testSeamCarving("test1x0.9", "1.jpg", 1, 0.9);
+    // testSeamCarving("test1x0.8", "1.jpg", 1, 0.8);
+    // testSeamCarving("test1x0.6", "1.jpg", 1, 0.6);
+    // testSeamCarving("test1x0.5", "1.jpg", 1, 0.5);
+    // testSeamCarving("test1x1.1", "1.jpg", 1, 1.1);
+
+    testSeamCarving("test2(x1x0.9)", "2.png", 1, 0.9);
+    testSeamCarving("test2(x0.9)", "2.png", 0.9, 0.9);
+    testSeamCarving("test2(x0.6)", "2.png", 0.6, 0.6);
+
+    // testSeamCarving("test3(x1.1)", "3.jpg", 1.1, 1.1);
+    // testSeamCarving("test3(x1x1.1)", "3.jpg", 1, 1.1);
+    // testSeamCarving("test3(x1.1x1)", "3.jpg", 1.1, 1);
+
+    // testSeamCarving("test4(x1x1.1)", "4.jpg", 1, 1.1);
+    // testSeamCarving("test4(x1x1.2)", "4.jpg", 1, 1.2);
+    // testSeamCarving("test4(x1x1.3)", "4.jpg", 1, 1.3);
+
+    // testSeamCarving("test5(x1x0.9)", "5.jpg", 1, 0.9);
+    // testSeamCarving("test5(x1x0.8)", "5.jpg", 1, 0.8);
+
+    // testSeamCarving("test6(x1x0.9)", "6.jpg", 1, 0.9);
+    // testSeamCarving("test6(x1x0.8)", "6.jpg", 1, 0.8);
+    // testSeamCarving("test6(x0.9x0.9)", "6.jpg", 0.9, 0.9);
+
+    // testSeamCarving("test7(x1x0.9)", "7.jpg", 1, 0.9);
+    // testSeamCarving("test7(x1x0.8)", "7.jpg", 1, 0.8);
+
+    // testSeamCarving("test8(x1x0.8)", "8.jpg", 1, 0.8);
+
+    // testSeamCarving("test9(x1x0.8)", "9.jpg", 1, 0.8);
+
+    // testSeamCarving("test10(x1x1.1)", "9.jpg", 1, 1.1);
+
+    // {
+    //     Mat img = imread("../seam_images/remove/1(colored).png", CV_LOAD_IMAGE_COLOR);
+    //     Mat dst;
+    //     Mat seams = RemoveItem(img, dst, laplacian_func, Vec3b(0, 255, 0));
+    //     imwrite("../seam_images/remove/1(removed).png", dst);
+    //     imwrite("../seam_images/remove/1(seams).png.png", seams);
+    // }
+
+    // {
+    //     Mat img = imread("../seam_images/remove/5(colored).png", CV_LOAD_IMAGE_COLOR);
+    //     Mat dst;
+    //     Mat seams = RemoveItem(img, dst, roberts_func, Vec3b(0, 255, 0));
+    //     imwrite("../seam_images/remove/5(removed).png", dst);
+    //     imwrite("../seam_images/remove/5(seams).png.png", seams);
+    // }
+
+    // {
+    //     Mat img = imread("../seam_images/remove/6(colored).png", CV_LOAD_IMAGE_COLOR);
+    //     Mat dst;
+    //     Mat seams = RemoveItem(img, dst, laplacian_func, Vec3b(0, 255, 0));
+    //     imwrite("../seam_images/remove/6(removed).png", dst);
+    //     imwrite("../seam_images/remove/6(seams).png.png", seams);
+    // }
 
     return 0;
 }

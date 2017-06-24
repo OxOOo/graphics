@@ -5,6 +5,7 @@
 #include "geometry.hpp"
 #include "material.hpp"
 #include "bezier.hpp"
+#include "kdtree.hpp"
 
 // 物品基类
 class Object
@@ -80,7 +81,14 @@ public:
         return (CollideInfo){tp*2, p, (center-p)/radius, ray.d};
     }
     virtual RGB getTexture(const CollideInfo& cinfo) const {
-        return RGB::white(); // FIXME
+        Vector De = Vector( 0 , 0 , 1 );
+        Vector Dc = Vector( 0 , 1 , 0 );
+        Vector I = Normalize(cinfo.p - center);
+        double a = acos( Dot(-I, De ) );
+        double b = acos( std::min( std::max( Dot(I, Dc ) / sin( a ) , -1.0 ) , 1.0 ) );
+        double u = a / PI , v = b / 2 / PI;
+        if ( Dot(I, Cross(Dc, De)) < 0 ) v = 1 - v;
+        return material->getSmoothTexture( u , v );
     }
 };
 
@@ -93,12 +101,51 @@ private:
 public:
     BezierObject(const Vector& offset, Bezier::ptr bezier): offset(offset), bezier(bezier) {}
     virtual CollideInfo collide(const Ray& ray) const {
-        CollideInfo cinfo = bezier->collide(Ray(ray.s-offset, ray.d));
+        CollideInfo cinfo = bezier->collide(Ray(ray.s-offset, ray.d), false);
+        if (cinfo.t > 0) {
+            cinfo.p = cinfo.p+offset;
+        }
+        return cinfo;
+    }
+    virtual CollideInfo innerCollide(const Ray& ray) const {
+        CollideInfo cinfo = bezier->collide(Ray(ray.s-offset, ray.d), true);
+        if (cinfo.t > 0) {
+            cinfo.p = cinfo.p+offset;
+        }
+        return cinfo;
+    }
+    virtual RGB getTexture(const CollideInfo& cinfo) const {
+        Vector De = Vector( 0 , 0 , 1 );
+        Vector Dc = Vector( 0 , 1 , 0 );
+        Vector I = Normalize(cinfo.p - offset - bezier->center());
+        double a = acos( Dot(-I, De ) );
+        double b = acos( std::min( std::max( Dot(I, Dc ) / sin( a ) , -1.0 ) , 1.0 ) );
+        double u = a / PI , v = b / 2 / PI;
+        if ( Dot(I, Cross(Dc, De)) < 0 ) v = 1 - v;
+        return material->getSmoothTexture( u , v );
+    }
+};
+
+// 文件对象
+class FileObject: public Object
+{
+private:
+    KDTree::ptr kdtree = KDTree::ptr(new KDTree());
+    Vector offset;
+public:
+    FileObject(const Vector& offset, const string& filename): offset(offset) {
+        kdtree->loadFromObjFile(filename);
+        kdtree->buildTree();
+    }
+    virtual CollideInfo collide(const Ray& ray) const {
+        CollideInfo cinfo = kdtree->collide(Ray(ray.s-offset, ray.d));
         if (cinfo.t > 0) cinfo.p = cinfo.p+offset;
         return cinfo;
     }
     virtual CollideInfo innerCollide(const Ray& ray) const { // FIXME
-        return NoCollide;
+        CollideInfo cinfo = kdtree->collide(Ray(ray.s-offset, ray.d));
+        if (cinfo.t > 0) cinfo.p = cinfo.p+offset;
+        return cinfo;
     }
     virtual RGB getTexture(const CollideInfo& cinfo) const {
         return RGB::white(); // FIXME
