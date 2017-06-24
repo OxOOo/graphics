@@ -43,3 +43,9 @@ SeamCarving图像缩放算法
 光栅图形学作业
 
 <div align="center"><img src="images/zeus/rst.png" /></div>
+
+## 更多图片
+
+[images](images)
+
+[ftp](ftp://chenyupi.cn)
